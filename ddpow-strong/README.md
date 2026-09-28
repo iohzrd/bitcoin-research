@@ -14,6 +14,9 @@ final = BLAKE2b-256(h0 || chunk(a_0) || ... || chunk(a_{k-1}))
 solution if final meets target
 ```
 
+(In the consensus rule `h0` is the version 2 header's stage-3 BLAKE2b digest, the chip's
+output; the prototype uses a single BLAKE2b over an 80-byte header to measure the read path.)
+
 The read is inside the per-nonce loop, so every hash reads. A solution carries a Merkle mountain range proof
 of its reads (leaf = BLAKE2b(0x00||chunk), node = BLAKE2b(0x01||l||r), committed peaks),
 checkable without the dataset. `prove` builds it and verifies: 8 reads over a 256 KiB dataset
@@ -27,16 +30,17 @@ checkable without the dataset. `prove` builds it and verifies: 8 reads over a 25
 | RAM-resident chain | 1 | 3.6e7 | the hasher | RAM feeds reads faster than the CPU hashes |
 | RAM-resident chain | 8 | 1.7e7 | the hasher | 8 reads + 2 hashes per attempt |
 | NVMe, O_DIRECT | 1 | 4.4e5 | the disk | a hasher 231x faster mines at the same rate |
-| NVMe, O_DIRECT | 8 | 4.6e4 | the disk | a hasher 2166x faster mines at the same rate |
+| NVMe, O_DIRECT | 8 | ~3e4 (1e4 to 7e4) | the disk | a hasher 1,400 to 10,000x faster mines at the same rate |
 
 ## What it shows
 
 1. **Software-only, no FPGA.** A commodity CPU mines the strong rule at its full effective
    rate; the rule needs no new hardware to prototype or run.
 2. **The read is the work; the hasher stops mattering.** From disk, mining is read-bound: a
-   231x (k=1) or 2166x (k=8) faster hasher mines at the same rate. A 4.5 TH/s BLAKE2b ASIC
-   and this CPU both mine at the NVMe's read rate. The ASIC's 43,000x hash advantage is
-   neutralized.
+   231x (k=1) or 1,400 to 10,000x (k=8) faster hasher mines at the same rate. A 4.5 TH/s
+   BLAKE2b ASIC and this CPU both mine at the NVMe's read rate. The ASIC's 43,000x hash
+   advantage is neutralized. Consumer NVMe random-read rate varies widely with queue depth
+   and drive state, so the k=8 disk rate spans about 1e4 to 7e4 attempts per second here.
 3. **Mining power = read throughput over a held copy of the chain.** To mine you must hold
    the chunks (RAM or disk); there is nothing to hash without them. This is the strong goal:
    mining requires a node, on the hashing hardware itself, not just on whoever checks.

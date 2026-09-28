@@ -49,9 +49,13 @@ Commitment. The header field `mm_rhs` MUST equal
 peaks highest first from the right with the node hash. `mm_rhs` is inside the header, so the
 reads are fixed before hashing.
 
-Per attempt (header `H` with nonce `n`, `k = 8`):
+Per attempt (header `H` with nonce `n`, `k = 8`). `h0` is the version 2 header's stage-3
+BLAKE2b-256 digest: the value a BLAKE2b mining chip outputs, and the value the per-candidate
+rule and the block-hash computation compare against the target. With this definition the
+strong rule is exactly the per-candidate rule with the pre-filter set to zero, so every `h0`
+performs the reads.
 
-    h0    = BLAKE2b-256(H)
+    h0    = stage-3 BLAKE2b-256 digest of H   (the mining chip's output)
     a_0   = S + ( word_0(h0) mod (N - S) )              parent block
     a_i   = word_i(h0) mod N            i = 1..k-1       whole chain
     final = BLAKE2b-256( h0 || chunk(a_0) || ... || chunk(a_{k-1}) )

@@ -6,13 +6,17 @@ Compares hashrate per dollar and its concentration across three cases: SHA256 mi
 is today, and the strong data-dependent rule (a chain read on every hash) run on a disk-bound
 home node versus a memory-resident server. All prices are approximate and market-dependent.
 Strong-rule rates are measured with `ddpow-strong` (read-per-hash, k = 8) on a 24-thread
-processor and one NVMe drive; the server rate is scaled by core count.
+processor and one NVMe drive; the server rate is scaled by core count. Consumer NVMe
+random-read rate varies widely with queue depth and drive state (about 1e4 to 7e4 attempts
+per second at k = 8 measured here), so disk figures are ranges.
 
 Summary. SHA256 is nearly flat per dollar: an industrial miner is about 2 times a home device
-per dollar across a 242 times hashrate span. The strong rule concentrates far more steeply
-today, about 280 to 400 times per dollar at a memory-price threshold near $6,000, but that
-advantage is self-limiting: it decays toward about 13 times as the chain grows, and mining
-converges on cheap disk hardware.
+per dollar across a 242 times hashrate span. The strong rule concentrates far more steeply,
+about 250 times per dollar (roughly 100 to 700 times, disk rate varies) at a memory-price
+threshold near $6,000. This advantage persists: at the measured chain growth of about 8 GB
+per year the chain would take about a century to reach 1.5 TB, so the memory advantage stays
+near 250 times for the foreseeable future. It decays only over centuries, or sooner if the
+block size increases greatly.
 
 ## 1. SHA256 world (real hardware)
 
@@ -45,15 +49,16 @@ read throughput over a held copy of the chain, not by hash rate.
 | --- | --- | --- |
 | pure hash, no reads | 1.0e8 | the hasher (ceiling) |
 | chain in memory | 1.6e7 (24-thread), ~4e7 (server) | the hasher |
-| chain on NVMe (O_DIRECT) | 2.0e4 | the disk |
+| chain on NVMe (O_DIRECT) | ~3e4 (1e4 to 7e4) | the disk |
 
 | miner | rate | power | price |
 | --- | --- | --- | --- |
-| home node (chain on NVMe) | 2e4 /s | ~100 W | ~$1,000 |
+| home node (chain on NVMe) | ~3e4 /s | ~100 W | ~$1,000 |
 | server, 1 TB memory (chain in RAM) | 4e7 /s | ~500 W | ~$6,000 (DDR4, current) |
 
-The server does 2,000 times the rate for about 6 times the cost: about 330 to 400 times
-better per dollar, and about 400 times per watt.
+The server does about 1,300 times the rate (disk rate varies, so 600 to 4,000 times) for
+about 6 times the cost: about 250 times better per dollar (roughly 100 to 700 times), and
+about 270 times per watt.
 
 ## 3. Memory prices (early 2026)
 
@@ -81,13 +86,14 @@ Server to hold the chain in memory:
 | comparison | rate ratio | cost ratio | per-dollar advantage |
 | --- | --- | --- | --- |
 | SHA256: industrial over home | 242x | 120x | ~2x |
-| strong rule: memory server over disk home (DDR4) | 2,000x | ~6x | ~330x |
-| strong rule: memory server over disk home (DDR5) | 2,000x | ~30x | ~65x |
+| strong rule: memory server over disk home (DDR4) | ~1,300x (600 to 4,000) | ~6x | ~250x (100 to 700) |
+| strong rule: memory server over disk home (DDR5) | ~1,300x | ~30x | ~45x |
 
-The strong rule concentrates roughly 150 to 200 times more steeply per dollar than SHA256,
-even measuring SHA256 across its full range from a $239 device to a $28,599 unit. The memory
-price surge reduced this advantage (from about 800 times at old memory prices to about 330
-times now), because holding the chain in memory now costs real money.
+The strong rule concentrates roughly 100 times more steeply per dollar than SHA256 (about 250
+times versus 2 times), even measuring SHA256 across its full range from a $239 device to a
+$28,599 unit. The memory price surge reduced this advantage (from about 800 times at old
+memory prices to about 250 times now), because holding the chain in memory now costs real
+money.
 
 ## 5. The advantage does not increase above server grade
 
@@ -104,41 +110,36 @@ The advantage is a single step at the memory threshold, then flat:
 So below the threshold (disk) a miner is far behind; at or above it (chain in memory) miners
 are roughly equal per dollar, and scaling further is linear.
 
-## 6. The chain grows, so the memory advantage decays
+## 6. The chain grows too slowly to erode the advantage
 
-The chain runs about 446 blocks per day, roughly 150 to 325 GB per year. As it grows, the
-cost of both machines becomes dominated by storage, and memory costs about 150 times more per
-GB than NVMe. So the cost ratio climbs and the per-dollar advantage of memory falls (rate
-ratio held at 2,000, memory at $6 per GB, NVMe at $0.04 per GB, $1,000 base):
+Measured at height 974,588: about 174 blocks per day at about 130 KB per block, so the chain
+grows about 8 GB per year, not the 150 to 325 GB per year assumed in an earlier draft. As the
+chain grows the cost of both machines becomes storage-dominated, and because memory costs
+about 150 times more per GB than NVMe, the per-dollar advantage of memory falls toward
+rate-ratio over 150. But at 8 GB per year that decay takes centuries:
 
-| chain size | memory server | NVMe home node | cost ratio | memory per-dollar advantage |
-| --- | --- | --- | --- | --- |
-| 0.7 TB (now) | ~$5,200 | ~$1,030 | 5x | 395x |
-| 1.5 TB | ~$10,000 | ~$1,060 | 9x | 212x |
-| 3 TB | ~$19,000 | ~$1,120 | 17x | 118x |
-| 5 TB | ~$31,000 | ~$1,200 | 26x | 77x |
-| 10 TB | ~$61,000 | ~$1,400 | 44x | 46x |
-| 30 TB | ~$181,000 | ~$2,200 | 82x | 24x |
-| asymptote | storage-dominated | | ~150x | ~13x |
+| chain size | years to reach at 8 GB/yr | memory per-dollar advantage |
+| --- | --- | --- |
+| 0.7 TB (now) | 0 | ~250x |
+| 1.5 TB | ~100 | ~140x |
+| 3 TB | ~290 | ~80x |
+| 10 TB | ~1,160 | ~30x |
+| asymptote | storage-dominated | ~9x |
 
-Two opposing trends: the absolute cost to hold the chain in memory rises steeply, and the
-per-dollar edge of memory over disk falls just as steeply. The net is that over time the
-rational miner increasingly picks NVMe, the memory premium stops being worth it, and the NVMe
-home node stays cheap and accessible the whole way (about $2,200 even at 30 TB). So the
-long-run equilibrium drifts toward most miners on disk, roughly equal per dollar, with memory
-giving a shrinking edge worthwhile only for the well-capitalized. The strong rule's
-concentration is therefore self-limiting.
-
-NVMe random-read performance has also improved faster than memory random-access latency
-(newer PCIe generations, higher input-output operations per second, io_uring). If that
-continues the 2,000 times rate ratio shrinks too, favoring disk further.
+The earlier conclusion that this advantage is self-limiting was wrong at the real growth
+rate. For any decision horizon of decades the chain stays near 0.7 to 1 TB, so the memory
+advantage stays near 250 times. It decays meaningfully only over centuries, or sooner if the
+block size increases greatly, since larger blocks are the only way the chain grows fast enough
+to matter. NVMe random-read performance improving faster than memory random-access latency
+would also shrink the advantage over time, but that is a slow, uncertain trend, not a
+near-term effect.
 
 ## Comparison across the three designs
 
 | property | SHA256 | weak data-dependent rule | strong data-dependent rule |
 | --- | --- | --- | --- |
-| cost depends on chain size | no | disk only (cheap) | memory (expensive, then decays) |
-| per-dollar concentration | ~2x (flat) | binds the checker, not hashers | ~330x now, ~13x asymptote |
+| cost depends on chain size | no | disk only (cheap) | memory (expensive; stable at 8 GB/yr growth) |
+| per-dollar concentration | ~2x (flat) | binds the checker, not hashers | ~250x, persists at measured growth |
 | forces every miner to hold a node | no | no (binds the checker) | yes |
 | obsoletes current ASICs | no | no | yes (throttled to read rate) |
 

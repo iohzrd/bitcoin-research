@@ -167,7 +167,7 @@ work against the committed tree, checkable with no chain data.
 - **Partial archive.** Holding a fraction f keeps f^7 of candidates: 90%
   held keeps 48%.
 - **Stale archive.** Old data never changes; a copy one month stale keeps
-  98.7%. Read 0 forces receiving every parent; keeping blocks after use is
+  99.3% (measured, at about 8 GB per year growth). Read 0 forces receiving every parent; keeping blocks after use is
   forced only weakly.
 - **Compression, regeneration.** Chain bytes compress by tens of percent at
   most and cannot be regenerated from less.
@@ -190,7 +190,8 @@ work against the committed tree, checkable with no chain data.
 reads per candidate) or remotely (about 16 bytes of transport per candidate
 plus central CPU). With p following difficulty (4.3) the choice is K and the
 floor p_min; at today's difficulty the floor binds, so p = p_min = 34.
-Network: about 34 PH/s (2026-09, 446 blocks per day). Absolute costs below
+Network: 33 to 40 PH/s (measured 2026-09 at height 974,588: 174 blocks per day, about
+130 KB per block; 33 at the 600 s target block time, 40 at the observed spacing). Absolute costs below
 scale with network hashrate; the per-PH/s table and the local-versus-remote
 ratio do not.
 
@@ -231,14 +232,14 @@ Two limits bound `p` from below:
 
 Recommendation: p_min = 34 for deployed SC-class stock firmware, K = 36;
 p = max(34, z - K) holds at the floor until difficulty grows far above
-today's. At p = 34 the whole 34 PH/s network is 2.0 million candidates/s:
-0.25 Gbit/s at 16 bytes (3.2 Gbit/s as stratum version 1 JSON), about 5 cores, and
-14 million archive reads/s (one chain-in-RAM server, idle) if one actor
+today's. At p = 34 the whole network (about 40 PH/s at the observed block spacing) is about 2.3
+million candidates/s: 0.30 Gbit/s at 16 bytes (3.7 Gbit/s as stratum version 1 JSON), about
+6 cores, and 16 million archive reads/s (one chain-in-RAM server, idle) if one actor
 checked it all. A hashing site without the chain sends a few KB/s per TH/s
 to whoever checks for it. Each 2 bits lower multiplies all of these by 4;
-p = 28 (127 million candidates/s network-wide, 16 Gbit/s, about 320 cores,
-about two chain-in-RAM servers) needs result paths about 60 times faster
-than the SC-LITE reports at, which its driver could allow (5.1). At 34 PH/s
+p = 28 (about 149 million candidates/s network-wide, 19 Gbit/s, about 370 cores,
+about two to three chain-in-RAM servers) needs result paths about 60 times faster
+than the SC-LITE reports at, which its driver could allow (5.1). At 40 PH/s
 even p = 28 is small in absolute terms: one archive could serve the whole
 network, so the rule forces whoever checks to hold a copy and pay per-
 candidate bandwidth, not many copies into existence. Possession spreads
