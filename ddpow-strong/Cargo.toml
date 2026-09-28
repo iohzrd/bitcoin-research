@@ -1,0 +1,14 @@
+[package]
+name = "ddpow-strong"
+version = "0.1.0"
+edition = "2024"
+description = "Strong data-dependent proof of work: a chain read on every hash, not only on reported candidates. Measures the effective attempt rate (read-bound from disk, hash-bound from RAM) and proves a solution's reads with a Merkle mountain range."
+publish = false
+
+[workspace]
+
+[dependencies]
+blake2 = "0.10"
+
+[profile.release]
+opt-level = 3
