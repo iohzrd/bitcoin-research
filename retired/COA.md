@@ -1,4 +1,4 @@
-# Coinbase Output Attestation (retired)
+# COA (Coinbase Output Attestation), retired
 
 Status: retired 2026-09-27. No further work. Work continues in
 [data-dependent-pow.md](../data-dependent-pow.md).
@@ -6,31 +6,33 @@ Status: retired 2026-09-27. No further work. Work continues in
 ## 1. Proposal
 
 A soft fork under which every coinbase payee signs for its payout in every
-block. Goal: make Stratum V1 blind hashing uneconomic (not impossible) for
-the marginal hasher. With the long coinbase maturity (6480 blocks, about 45
-days), a custodial pool must carry weeks of float and, under COA, hold its
-hashers' signing keys to keep paying them in the coinbase, which makes it
-their key custodian. A miner paid directly in the coinbase holds its own
-key and signs with a small device.
+block. Goal: make Stratum V1 hashing, in which the hasher does not receive the
+template's transactions, uneconomic (not impossible) for the marginal hasher.
+With the long coinbase maturity (6480 blocks, about 45 days), a custodial pool
+must fund weeks of payouts before its coinbase outputs mature and, under COA,
+hold its hashers' signing keys to keep paying them in the coinbase, which
+makes it their key custodian. A miner paid directly in the coinbase holds its
+own key and signs with a small device.
 
 The attestation key is the payout key on purpose: a separate attestation
-key could be held by a pool for a hasher, which reopens custodial pooling.
+key could be held by a pool for a hasher, which permits custodial pooling
+again.
 Cost accepted: a public per-block signing history per payout address.
 
 ## 2. Rule
 
 After activation, for every coinbase output with value > 0:
 
-- the script is P2TR (`51 20 <32>`);
+- the script is pay-to-taproot (`51 20 <32>`);
 - the next output is `OP_RETURN PUSH64 <sig>` (`6a 40 <64 bytes>`), value 0;
 - `sig` verifies under BIP340 with the output's 32-byte key over
 
 ```
-msg = tagged_hash("COA/attest", height u32 LE || prev_block_hash, header byte order)
+msg = tagged_hash("COA/attest", height u32 little-endian || prev_block_hash, header byte order)
 tagged_hash(t, x) = SHA256(SHA256(t) || SHA256(t) || x)
 ```
 
-Zero-value outputs carry no constraint. Cost: one Schnorr verification per
+Zero-value outputs are unconstrained. Cost: one Schnorr verification per
 payee, batchable.
 
 Test vector: height 840000, previous block hash (display order)
@@ -41,16 +43,20 @@ Test vector: height 840000, previous block hash (display order)
 
 - **Placement: outputs.** The coinbase witness must be exactly one 32-byte
   item today; attestations there are a hard fork and need a new commitment.
-  Outputs are covered by the txid and fit RDTS's 83-byte OP_RETURN cap.
+  Outputs are covered by the txid and fit the 83-byte OP_RETURN cap of the
+  Reduced Data Temporary Softfork (BIP 110).
 - **Signature: raw BIP340 over a tagged hash**, not BIP-322 (whose verifier
-  lives outside consensus). Payout script in the message is redundant
+  is not part of consensus). Payout script in the message is redundant
   (BIP340 binds the key); difficulty adds nothing (a pool can supply nBits).
-- **Taproot only.** Key-path P2TR; script-path-only outputs cannot attest.
-- **Weight.** 472 WU per payee (P2TR output plus attestation). Under RDTS
-  (800 K WU blocks until 2027-09-01) a quarter of a block pays about 420
-  payees; about 2100 after RDTS.
-- **Unattested payees.** Redistributed to attesting payees (loses that
-  block's slice), or carried to a later coinbase from later payees' share.
+- **Taproot only.** Key-path pay-to-taproot; script-path-only outputs cannot
+  attest.
+- **Weight.** 472 weight units per payee (pay-to-taproot output plus attestation). Under
+  the Reduced Data Temporary Softfork (800 K weight unit blocks until 2027-09-01) a
+  quarter of a block pays about 420 payees; about 2100 after the Reduced Data
+  Temporary Softfork.
+- **Unattested payees.** Redistributed to attesting payees (the unattested
+  payee forfeits its share of that block), or deferred to a later coinbase
+  and paid from later payees' share.
   Never settled from the pool wallet (custodial).
 - **Deployment order.** Pool policy first: a pool can require attestations
   and write them into coinbases before any consensus change; the soft fork
@@ -71,25 +77,26 @@ node at the hashing site.
 
 ## 5. What was built
 
-- **Device** (Rust workspace): `coa-wire` (framing, messages; `no_std`,
-  no dependencies), `coa-core` (BIP32, BIP-322, BIP340 attestation, request
-  handling; `no_std`, no allocation), `coa-host` (HID and stream
-  transports, `coa` CLI), `coa-device-linux` (daemon on `/dev/hidg0` or a
-  Unix socket). Protocol v1: four fixed-length commands over 64-byte HID
-  reports: INFO, ADDRESS, ATTEST (BIP-322 form), ATTEST_RAW (consensus
-  form). Keys never leave the device; it signs only messages it builds from
-  height and previous hash. 72 µs per P2TR attestation (x86_64). cargo-fuzz
-  targets for the framer, both decoders and the request path.
-- **HSM HAT** (designed, not built): a microcontroller on a Raspberry Pi
-  HAT running `coa-core`, holding the seed; the Pi forwards 64-byte frames
-  and is trusted for availability only.
+- **Device** (Rust workspace): `coa-wire` (framing, messages; `no_std`, no
+  dependencies), `coa-core` (BIP32, BIP-322, BIP340 attestation, request
+  handling; `no_std`, no allocation), `coa-host` (human interface device and
+  stream transports, `coa` command-line interface), `coa-device-linux` (daemon
+  on `/dev/hidg0` or a Unix socket). Protocol v1: four fixed-length commands
+  over 64-byte human interface device reports: INFO, ADDRESS, ATTEST (BIP-322
+  form), ATTEST_RAW (consensus form). The device does not export keys; it
+  signs only messages it builds from height and previous hash. 72 µs per
+  pay-to-taproot attestation (x86_64). cargo-fuzz targets for the framer, both
+  decoders and the request path.
+- **Hardware security module HAT** (designed, not built): a microcontroller on
+  a Raspberry Pi HAT running `coa-core`, storing the seed; the Pi forwards
+  64-byte frames and is trusted for availability only.
 - **Knots** consensus patch, regtest-only buried deployment
   `-testactivationheight=coa@<h>`; `getblocktemplate` rule `!coa` with
   `coa_message_hash`; `test/functional/feature_coa.py`.
-- **ratum** pool and gateway: attestation-aware coinbases (pair-atomic
-  output selection), coinbaser messages v3 (0x12/0x13) and tip
-  attestation (0xFA), pool attests its remainder, gateway self-pays until
-  the pool attests, P2TR-only identities; e2e scenario `coa` mined attested
+- **ratum** pool and gateway: attestation-aware coinbases (pair-atomic output
+  selection), coinbaser messages v3 (0x12/0x13) and tip attestation (0xFA),
+  pool attests its remainder, gateway self-pays until the pool attests,
+  pay-to-taproot-only identities; end-to-end scenario `coa` mined attested
   pooled blocks through node, pool, gateway, device and miner.
 
 ## 6. Where the code is
