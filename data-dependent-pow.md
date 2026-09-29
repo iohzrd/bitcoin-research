@@ -273,19 +273,9 @@ pre-filter set by `-ddpowprefilter` and each block needing 2^50 hashes
 
 The limit is the controller's collection loop in firmware, not the chips:
 the boards hold queued results, so reading more per visit, or visiting more
-often, would raise it. The miner's displayed hashrate is computed from
-accepted results and collapses below p = 34.
-
-Disassembly of the `intminer` engine (same driver family, SCBox II 2.2.2;
-`~/src/goldshell/RESULT_PATH_ANALYSIS.md`) confirms the mechanism: the scan
-loop round-robins the boards, and per board it does one fixed 2048-byte SPI
-read (about 3.48 ms at a roughly 4.7 MHz clock) and extracts exactly one
-nonce, though the ASIC status word reports a queued-nonce count in bits
-[15:12] that it ignores past the first. No sleep throttle. Two firmware-only
-levers: drain the per-poll nonce queue (up to about 15x, to p_min about 30,
-if the queue is real; unconfirmed without the ICT580 register map or a live
-read) and faster or shorter SPI reads. Best case with both is p_min about
-28. A firmware change is the only route below p = 34 on this hardware.
+often, would raise it. A firmware change is the only route below p = 34 on
+this hardware. The miner's displayed hashrate is computed from accepted
+results and collapses below p = 34.
 
 ## 6. Who pays, and what it forces
 
