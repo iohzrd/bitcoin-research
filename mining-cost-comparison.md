@@ -7,9 +7,10 @@ is today, and the strong data-dependent rule (a chain read on every hash) run on
 home node versus a memory-resident server. All prices are approximate and market-dependent.
 Strong-rule rates are for the specification's 4,096-byte chunks, each hashed whole (265
 BLAKE2b compressions per attempt at k = 8), measured with `ddpow-strong` on a desktop (Ryzen 9
-5950X, 32 threads, Samsung 980 PRO) and an AMD Radeon RX 9070 XT (`ddpow-strong/README.md`).
-Server rates are extrapolated from the desktop by core count and clock. The RAM measurements
-use 12 GiB datasets, not the full chain.
+5950X, 32 threads, Samsung 980 PRO) and an AMD Radeon RX 9070 XT, and on a rented 8 x NVIDIA
+H200 node with a DDR5 host (2 x Xeon Platinum 8468), 2026-10-01 (`ddpow-strong/README.md`). The
+DDR4 server rate is extrapolated from the desktop by core count and clock. The CPU RAM
+measurements use 12 to 128 GiB datasets; the H200 node held 832 GiB, about the chain's size.
 
 Summary. SHA256 hashrate per dollar is nearly constant across hardware sizes: an industrial
 miner is about 2 times a home device per dollar across a 242 times hashrate span. Under the
@@ -17,7 +18,10 @@ strong rule with 4,096-byte chunks, hashing limits a memory-resident miner, so h
 chain in memory buys little: a 1 TB DDR4 server is about 9 times a home node's rate for about
 7.8 times its price, about 1.2 times per dollar (about 20 times with 64-byte chunks). A DDR5
 server is worse per dollar than a home node. As the chain grows, memory's cost per GB (about 62
-times NVMe's) makes the server worse per dollar than a disk node from about 1.4 TB on.
+times NVMe's) makes the server worse per dollar than a disk node from about 1.4 TB on. An
+8 x H200 node holding the chain in its GPUs' memory measured 1.02e8 attempts/s, 680 times a home
+node and 75 times the DDR5 server, about 2.1 to 2.8 times a home node per dollar of GPUs, and
+rents for about $30 per hour.
 
 ## 1. SHA256 mining (real hardware)
 
@@ -51,8 +55,10 @@ miner is limited by the slower of read throughput over its copy and BLAKE2b thro
 | chain on NVMe (980 PRO, O_DIRECT, 384 threads) | 1.5e5 (measured at 64 bytes; a drive reads one 4 KiB page per read at either size) | the drive |
 | chain in RAM (desktop, 12 GiB) | 5.6e5 | hashing |
 | chain in RAM (56-core DDR4 server) | ~1.4e6 (extrapolated; memory allows ~3.7e6) | hashing |
+| chain in RAM (DDR5 server: 2 x Xeon Platinum 8468, 128 threads, 128 GiB) | 1.36e6 (measured; memory allows 5.39e6) | hashing |
 | GPU reading host RAM over PCIe Gen4 x16 (RX 9070 XT) | 9.5e5 | PCIe |
 | GPU, data in its own memory (12 GiB; cannot hold the chain) | 1.16e7 | hashing |
+| 8 x H200, chain split across the GPUs' memory (832 GiB), reads over NVLink | 1.02e8 (measured) | NVLink (3.3 TB/s) |
 
 A desktop cannot hold the chain in its memory, so a home node mines from NVMe.
 
@@ -60,6 +66,8 @@ A desktop cannot hold the chain in its memory, so a home node mines from NVMe.
 | --- | --- | --- | --- |
 | home node (chain on NVMe) | 1.5e5 /s | ~100 W | ~$1,000 |
 | server, 1 TB DDR4 (chain in RAM) | ~1.4e6 /s | ~500 W | ~$7,800 |
+| server, 1 TB DDR5 (chain in RAM) | 1.36e6 /s (measured on 2 x Xeon 8468) | not measured | ~$33,000 to $40,000 (the priced EPYC 9654 build, not the measured host) |
+| 8 x H200 node (chain in GPU memory) | 1.02e8 /s | 2.2 to 2.5 kW measured for the GPUs | $240,000 to $320,000 in GPUs alone; rents for about $30/h |
 
 The server does about 9.2 times the rate for about 7.8 times the cost: about 1.2 times better
 per dollar, and about 1.8 times per watt.
@@ -86,7 +94,8 @@ Server to hold the chain in memory (1 TB): DDR4 about $7,800 (EPYC 7663 and boar
 | --- | --- | --- | --- |
 | SHA256: industrial over home | 242x | 120x | ~2x |
 | strong rule: DDR4 server over disk home | ~9.2x | ~7.8x | ~1.2x |
-| strong rule: DDR5 server (96 cores, ~2.5e6 /s) over disk home | ~17x | ~33 to 40x | ~0.4 to 0.5x |
+| strong rule: DDR5 server (measured 1.36e6 /s) over disk home | ~9.1x | ~33 to 40x | ~0.23 to 0.28x |
+| strong rule: 8 x H200 node (measured 1.02e8 /s) over disk home | ~680x | ~240 to 320x (GPUs only) | ~2.1 to 2.8x |
 
 With 4,096-byte chunks the strong rule's per-dollar advantage for the larger miner is below
 SHA256's.
@@ -99,12 +108,16 @@ SHA256's.
   grows linearly, as with buying more SHA256 miners.
 - A GPU adds hashing, but a consumer card's memory cannot hold the chain, and reading host
   memory over PCIe Gen4 x16 caps it at about 9.5e5 attempts per second per card.
-- An 8-GPU H200 node (8 x 141 GB) holds the chain. Assuming it compresses BLAKE2b at the RX 9070
-  XT's measured 3.99e9 per second per GPU at the same 77% efficiency (not measured on an H200),
-  it is limited by hashing at about 9.3e7 attempts per second, about 67 times a DDR4 server. At
-  $240,000 to $320,000 in GPUs alone that is about 290 to 390 attempts per second per dollar,
-  against about 180 for the DDR4 server and 150 for the home node. It is 3.2 times the reset
-  rate of 2.86e7, which matters for renting (a majority attack for hours).
+- An 8-GPU H200 node (8 x 141 GB) holds the chain. Measured with 832 GiB split across its GPUs:
+  1.02e8 attempts per second, limited by NVLink (3.3 TB/s of reads; 77% of reads cross it, and
+  hashing alone would allow 8 x 2.96e7), 75 times the measured DDR5 server and about 73 times
+  the extrapolated DDR4 server. At $240,000 to $320,000 in GPUs alone that is about 320 to 425
+  attempts per second per dollar, against about 180 for the DDR4 server and 150 for the home
+  node. It is 3.6 times the reset rate of 2.86e7 and rents for about $30 per hour, which matters
+  for a majority attack lasting hours.
+- By chunk size, the node's lead over one NVMe drive falls from 22,000x at 64 bytes to 680x at
+  4 KiB and stays about there beyond (both then pay per byte), so 4 KiB chunks give the smallest
+  lead the read size allows.
 
 ## 6. Chain growth reduces the server's advantage
 
