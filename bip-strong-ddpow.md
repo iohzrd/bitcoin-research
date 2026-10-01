@@ -26,9 +26,7 @@ Today a miner needs no block chain data and runs no node. A pool assembles the c
 reduces it to a header (164 bytes in the version 2 form required from height 961,640), and sends
 that header to hashing hardware. The hardware iterates over nonces and returns any whose hash
 meets a target it is given. It stores no block chain and validates nothing. This lets hashing
-concentrate at parties that hold no chain, and lets miners extend blocks they have not checked:
-on 4 July 2015, miners that did not validate blocks produced an invalid chain 6 blocks long
-(https://bitcoin.org/en/alert/2015-07-04-spv-mining).
+concentrate at parties that hold no chain, and lets miners extend blocks they have not checked.
 
 To make holding the chain a condition of mining, the work that bounds mining must be reads of
 chain data. Reading the chain on only a small share of hashes does not achieve this: the reads
@@ -217,6 +215,26 @@ parent chunk) is known before a storage read, so a fraction-`f` holder spends
 `(1 + f + ... + f^(k-2)) / f^(k-2)` storage reads per completed attempt against `k - 1` for a
 full holder: 1.4x at `f = 0.9`, 18x at `0.5`, 1.7e4x at `0.146`.
 
+The read count `k` sets two costs against each other. A proof section carries `k` chunks with
+their paths, so its size grows linearly with `k`; the storage reads a holder of a fraction `f`
+of the chain spends per completed attempt, relative to a full holder, grow exponentially with
+`k` (the formula above). `k` does not change the ratio between miners whose rates are bounded by
+their random reads, whatever their storage: each performs `k - 1` storage reads per attempt, so
+`k` divides every such rate alike. In the table, sizes are while `N < 2^28` (52,560 blocks per
+year carry 52,560 times the section), and the `f` columns give that relative read count to two
+decimal places:
+
+| `k` | section (bytes) | % of a full block | `f = 0.9` | `f = 0.75` | `f = 0.5` |
+| --- | --------------- | ----------------- | --------- | ---------- | --------- |
+| 4   | 20,404          | 0.51%             | 1.12x     | 1.37x      | 2.33x     |
+| 6   | 30,324          | 0.76%             | 1.25x     | 1.93x      | 6.20x     |
+| 8   | 40,244          | 1.01%             | 1.40x     | 2.78x      | 18.14x    |
+| 12  | 60,084          | 1.50%             | 1.79x     | 6.18x      | 186.09x   |
+| 16  | 79,924          | 2.00%             | 2.31x     | 14.77x     | 2,184.47x |
+
+With `k = 8` the section is at most 1.01% of a full block while a holder of half the chain
+spends 18.14 times a full holder's storage reads per completed attempt.
+
 Each position comes from a distinct digest. A digest has four 8-byte words, so positions taken
 from one digest reuse words when `k - 1` exceeds 4; two positions from the same word differ by
 an offset fixed in advance, whether both are held depends on which part of the chain is held,
@@ -242,9 +260,13 @@ The proof section cannot be included in the block hash input: committing it in t
 transaction Merkle root changes `h0`, which changes the read positions it proves. It needs no
 hash commitment because it has one valid value for a given header and chain; changing any byte
 fails verification. Requiring it in every block, rather than relaying it separately, means no
-valid block lacks one, so pruned nodes and light clients never depend on a party that holds the
-tree's interior nodes to build it. `ext` lets a node without the parent block extend the
-parent's peaks.
+valid block lacks one, so a validator, pruned or archival, never depends on a party that holds
+the tree's interior nodes to build it; a header follower receives each header's section in
+`hdrproofs` from peers that keep sections or can build them. `ext` lets a node without the
+parent block extend the parent's peaks. The section is outside the block's weight and serialized
+size limits, so it takes no transaction capacity: counted in weight at one unit per byte, a
+section of 40,244 bytes (its bound while `N < 2^28`) would take 5.03% of the 800,000 weight
+units allowed until 1 September 2027 and 1.01% of 4,000,000.
 
 A proof alone shows only that its chunks match `mm_rhs`, not that `mm_rhs` commits to the real
 chain. The anchor and the per-block bound `C_max` require every header's tree to extend the
@@ -272,7 +294,10 @@ the header's stages.
 Proof sections. At most 40,244 bytes per block while `N < 2^28`: at 52,560 blocks per year
 (600-second spacing), at most 2,115,224,640 bytes per year. Building paths requires the tree's
 interior nodes: at level 1 and above, `N - popcount(N)` nodes, fewer than `32 x N` bytes (1/128
-of the chain's size), with each path's level-0 sibling recomputed from its chunk.
+of the chain's size), with each path's level-0 sibling recomputed from its chunk. No node needs
+to store sections: a node may discard a block's section once the block is validated, and a node
+holding the blocks and the tree's interior nodes builds any section again on request, so
+sections cost bandwidth, not storage.
 
 Validation. Pruned nodes validate from the per-block tree state (Verification) and the proof
 section. Light clients download at most 40,244 bytes of proof section with each 164-byte header
@@ -357,54 +382,15 @@ block after the anchor, so the fabricated share can grow by `C_max` chunks per b
   How chains that diverge before `A` are compared is not specified.
 - Block announcements: how a node obtains the proof section of a block announced by `headers`
   or `inv` is not specified.
-- Who carries the reads. While `N < 2^28` a proof section is at most 40,244 bytes: at most
-  39,680 of reads (8 chunks with their paths) and at most 564 of tree extension (`len`, `N`, `S`
-  and at most 17 `ext` roots). A node holding block `P` and the states kept for `P - 1` and `P`
-  derives the extension of block `P + 1` and read 0's chunk and path; an archival node also
-  reads every other chunk from its own chain; header followers (headers-first synchronization,
-  light clients) hold neither. For a node that recomputes the reads they cannot be made smaller
-  without reducing what a miner must hold or transfer per read (Rationale). Proposed design, not
-  yet in the Specification: the reads travel outside the block, as witness data does for peers
-  that request it (BIP144), and each node receives only what it cannot derive.
-  - Blocks. A block is valid if its work is valid; the proof section is not part of the block,
-    `block` and `cmpctblock` messages are unchanged, and the protocol message size limit stays
-    4,000,000 bytes. A node checks a block's work from its own chain or from a `ddpowreads`
-    message.
-  - `sendddpow`, after the version handshake: `reads` (u8: 1 to receive a `ddpowreads` after
-    every `block` or `cmpctblock` the peer sends or announces, with read 0 omitted), `level`
-    (u8: the lowest tree level the sender stores, 64 for peaks only) and `serves` (u8: 0 for
-    none, 1 for the reads of blocks it holds, 2 for the reads of every block). A peer that sent
-    it receives `hdrproofs` in place of `headers`.
-  - `hdrproofs`: a compact-size count of at most 2,000 entries; per entry a header and, at
-    heights from `A`, its extension (`N`, `S` and the `ext` roots, whose count `S` and `N` fix).
-    An entry is at most 724 bytes, so 2,000 entries are at most 1,448,003 bytes; a message with
-    fewer than 2,000 entries ends the sender's chain, as a `headers` message does.
-  - `ddpowreads`: the block hash (32 bytes), `form` (u8, bit 0: read 0 omitted), `level` (u8),
-    then per included read, in order, its chunk (4,096 bytes) and the `min(h_i, level)` siblings
-    of its path, lowest first, where `h_i` is the height of the peak holding `a_i`. The header,
-    the receiver's state, `form` and `level` fix every length, so the message has one valid
-    encoding. `getddpowreads` (block hash, `form`, `level`) requests one; the answer is a
-    `ddpowreads` or a `notfound` message.
-  - Per node, while `N < 2^28`. An archival node at the tip needs neither reads nor extensions.
-    A pruned validator receives, with read 0 omitted, 34,754 bytes per block when it stores only
-    peaks, 30,050 when it stores tree levels 6 and above (fewer than `N` bytes, 1/4,096 of the
-    chain's size) and 28,706 when it stores every level (fewer than `64 x N` bytes, 1/64 of the
-    chain's size); it maintains those levels from the blocks it receives. It requests reads from
-    peers with `serves` 2 during synchronization and receives them after each new block. A
-    header follower receives at most 724 bytes per header and requests full-form reads (`form`
-    0, `level` 64: 39,714 bytes, at most 48,930) for the most recent headers and for a random
-    sample of earlier ones chosen after the headers arrive: if a fraction `q` of the headers
-    lack valid work, `s` samples find one with probability `1 - (1 - q)^s`, so `s` is a security
-    parameter.
-  - Faults. A `ddpowreads` that fails verification is a fault of the peer that sent it, which
-    the node disconnects; it never marks the block invalid. A block whose `final` misses the
-    target after its reads verify is invalid, as in Fault attribution. A pruned node that no
-    peer serves cannot check a block's work and stops at that block; it never accepts a block
-    whose work it has not checked. The design replaces the mandatory section's guarantee that no
-    valid block lacks one with a dependence on peers with `serves` 2 for availability, not for
-    correctness; pruned nodes already download historical blocks from archival peers.
-  - Not specified: transport compression of chunks, and combining the paths of one message into
-    one multiproof.
+- Header followers: each `hdrproofs` entry carries the header's full proof section (Relay), at
+  most 40,244 bytes while `N < 2^28` against 164 bytes of header, of which at most 564 are the
+  tree extension (`len`, `N`, `S` and at most 17 `ext` roots). How a header follower can check
+  headers' work with less than one section per header is not specified.
+- Stripped blocks: a node holding the chain could ask a peer, between `version` and `verack` (a
+  BIP434 `feature` message; Bitcoin Knots does not implement BIP434, and without it a
+  `sendddpow` message), to omit the section from `block` and `cmpctblock` messages, and check
+  the reads against its own chain. A block's validity would not change: its work must be valid
+  whether or not its section was sent.
 - Concentration: the security model changes from aggregate hash rate to aggregate read
   throughput over held chains; its concentration properties (disk versus DRAM cost per unit
   rate) are not analyzed.
