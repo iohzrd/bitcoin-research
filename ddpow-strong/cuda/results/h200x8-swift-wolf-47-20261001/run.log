@@ -1,0 +1,134 @@
+== machine
+index, name, memory.total [MiB], power.limit [W], pcie.link.gen.current, pcie.link.width.current
+0, NVIDIA H200, 143771 MiB, 700.00 W, 5, 16
+1, NVIDIA H200, 143771 MiB, 700.00 W, 5, 16
+2, NVIDIA H200, 143771 MiB, 700.00 W, 5, 16
+3, NVIDIA H200, 143771 MiB, 700.00 W, 5, 16
+4, NVIDIA H200, 143771 MiB, 700.00 W, 5, 16
+5, NVIDIA H200, 143771 MiB, 700.00 W, 5, 16
+6, NVIDIA H200, 143771 MiB, 700.00 W, 5, 16
+7, NVIDIA H200, 143771 MiB, 700.00 W, 5, 16
+	[4mGPU0	GPU1	GPU2	GPU3	GPU4	GPU5	GPU6	GPU7	CPU Affinity	NUMA Affinity	GPU NUMA ID[0m
+GPU0	 X 	NV18	NV18	NV18	NV18	NV18	NV18	NV18	0-63	0		N/A
+GPU1	NV18	 X 	NV18	NV18	NV18	NV18	NV18	NV18	0-63	0		N/A
+GPU2	NV18	NV18	 X 	NV18	NV18	NV18	NV18	NV18	0-63	0		N/A
+GPU3	NV18	NV18	NV18	 X 	NV18	NV18	NV18	NV18	0-63	0		N/A
+GPU4	NV18	NV18	NV18	NV18	 X 	NV18	NV18	NV18	64-127	1		N/A
+GPU5	NV18	NV18	NV18	NV18	NV18	 X 	NV18	NV18	64-127	1		N/A
+GPU6	NV18	NV18	NV18	NV18	NV18	NV18	 X 	NV18	64-127	1		N/A
+GPU7	NV18	NV18	NV18	NV18	NV18	NV18	NV18	 X 	64-127	1		N/A
+
+Legend:
+
+  X    = Self
+  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)
+  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node
+  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)
+  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)
+  PIX  = Connection traversing at most a single PCIe bridge
+  NV#  = Connection traversing a bonded set of # NVLinks
+GPU 0: NVIDIA H200 (UUID: GPU-72bbf4c3-fb86-9a9c-8e18-4b6eded34c70)
+	 Link 0: 26.562 GB/s
+	 Link 1: 26.562 GB/s
+	 Link 2: 26.562 GB/s
+	 Link 3: 26.562 GB/s
+	 Link 4: 26.562 GB/s
+	 Link 5: 26.562 GB/s
+	 Link 6: 26.562 GB/s
+	 Link 7: 26.562 GB/s
+	 Link 8: 26.562 GB/s
+	 Link 9: 26.562 GB/s
+	 Link 10: 26.562 GB/s
+	 Link 11: 26.562 GB/s
+	 Link 12: 26.562 GB/s
+	 Link 13: 26.562 GB/s
+	 Link 14: 26.562 GB/s
+	 Link 15: 26.562 GB/s
+	 Link 16: 26.562 GB/s
+	 Link 17: 26.562 GB/s
+GPU 1: NVIDIA H200 (UUID: GPU-4ea76be4-1c70-ac14-d44d-53f71dd00024)
+	 Link 0: 26.562 GB/s
+	 Link 1: 26.562 GB/s
+	 Link 2: 26.562 GB/s
+	 Link 3: 26.562 GB/s
+	 Link 4: 26.562 GB/s
+	 Link 5: 26.562 GB/s
+	 Link 6: 26.562 GB/s
+	 Link 7: 26.562 GB/s
+	 Link 8: 26.562 GB/s
+	 Link 9: 26.562 GB/s
+	 Link 10: 26.562 GB/s
+	 Link 11: 26.562 GB/s
+	 Link 12: 26.562 GB/s
+	 Link 13: 26.562 GB/s
+	 Link 14: 26.562 GB/s
+	 Link 15: 26.562 GB/s
+	 Link 16: 26.562 GB/s
+	 Link 17: 26.562 GB/s
+GPU 2: NVIDIA H200 (UUID: GPU-82009be4-86ee-3f98-3ce9-c0a7b0d4b7ee)
+	 Link 0: 26.562 GB/s
+Thu Oct  1 21:03:01 2026       
++-----------------------------------------------------------------------------------------+
+| NVIDIA-SMI 580.173.02             Driver Version: 580.173.02     CUDA Version: 13.0     |
++-----------------------------------------+------------------------+----------------------+
+| GPU  Name                 Persistence-M | Bus-Id          Disp.A | Volatile Uncorr. ECC |
+CPU(s):                               128
+Model name:                           Intel(R) Xeon(R) Platinum 8468
+Socket(s):                            2
+NUMA node(s):                         2
+               total        used        free      shared  buff/cache   available
+Mem:            1574          11        1551           0          19        1563
+Swap:              0           0           0
+Cuda compilation tools, release 13.0, V13.0.88
+Build cuda_13.0.r13.0/compiler.36424714_0
+== plan: 8 GPUs, dev dataset 135 GiB, peer 104 GiB per GPU, CPU 128 GiB
+   12 GPU runs and 2 CPU runs of 15 s, plus builds: about 9 minutes (estimate)
+== build
+     11     0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
+CUDA starts on all 8 GPUs
+info: downloading installer
+info: profile set to minimal
+info: default host tuple is x86_64-unknown-linux-gnu
+info: syncing channel updates for stable-x86_64-unknown-linux-gnu
+info: latest update on 2026-10-01 for version 1.99.0 (b940084d7 2026-09-28)
+info: downloading 3 components
+info: default toolchain set to stable-x86_64-unknown-linux-gnu
+== GPU step ceilings (dataset in cache)
+{"kernel":"stream","mode":"ceiling","gpu":"NVIDIA H200","gpus":1,"chunk":4096,"step":"blake2b","gib_per_gpu":0.000,"chunks":64,"tpb":128,"bpsm":8,"seconds":15.04,"attempts_per_s":2.9611e+07,"reads_per_s":2.3688e+08,"read_GBps":970.3,"remote_read_fraction":0.000,"fill_s":0.12}
+{"power_w_per_gpu": {"0": 348.4, "1": 76.6, "2": 79.0, "3": 77.4, "4": 79.1, "5": 76.8, "6": 77.9, "7": 79.1}}
+128 of 128 match (results/5e044077726e-20261001T210300Z/samples-ceiling-blake2b.txt)
+{"kernel":"stream","mode":"ceiling","gpu":"NVIDIA H200","gpus":1,"chunk":4096,"step":"mul","gib_per_gpu":0.000,"chunks":64,"tpb":128,"bpsm":8,"seconds":15.21,"attempts_per_s":1.2626e+08,"reads_per_s":1.0101e+09,"read_GBps":4137.3,"remote_read_fraction":0.000,"fill_s":0.12}
+{"power_w_per_gpu": {"0": 387.3, "1": 76.6, "2": 79.1, "3": 77.4, "4": 78.9, "5": 76.7, "6": 77.7, "7": 79.0}}
+128 of 128 match (results/5e044077726e-20261001T210300Z/samples-ceiling-mul.txt)
+== dataset in one GPU's memory (135 GiB)
+{"kernel":"stream","mode":"dev","gpu":"NVIDIA H200","gpus":1,"chunk":4096,"step":"blake2b","gib_per_gpu":135.000,"chunks":35389440,"tpb":128,"bpsm":8,"seconds":15.14,"attempts_per_s":2.7783e+07,"reads_per_s":2.2226e+08,"read_GBps":910.4,"remote_read_fraction":0.000,"fill_s":0.18}
+{"power_w_per_gpu": {"0": 484.4, "1": 76.5, "2": 79.2, "3": 77.3, "4": 78.8, "5": 76.7, "6": 77.5, "7": 78.9}}
+128 of 128 match (results/5e044077726e-20261001T210300Z/samples-dev-stream-blake2b.txt)
+{"kernel":"stream","mode":"dev","gpu":"NVIDIA H200","gpus":1,"chunk":4096,"step":"mul","gib_per_gpu":135.000,"chunks":35389440,"tpb":128,"bpsm":8,"seconds":15.01,"attempts_per_s":1.3460e+07,"reads_per_s":1.0768e+08,"read_GBps":441.1,"remote_read_fraction":0.000,"fill_s":0.16}
+{"power_w_per_gpu": {"0": 236.9, "1": 76.5, "2": 79.1, "3": 77.0, "4": 78.8, "5": 76.7, "6": 77.5, "7": 78.9}}
+128 of 128 match (results/5e044077726e-20261001T210300Z/samples-dev-stream-mul.txt)
+{"kernel":"staged","mode":"dev","gpu":"NVIDIA H200","gpus":1,"chunk":4096,"step":"blake2b","gib_per_gpu":135.000,"chunks":35389440,"tpb":128,"bpsm":8,"seconds":15.16,"attempts_per_s":2.2295e+07,"reads_per_s":1.7836e+08,"read_GBps":730.6,"remote_read_fraction":0.000,"fill_s":0.17}
+{"power_w_per_gpu": {"0": 401.9, "1": 76.5, "2": 79.1, "3": 76.9, "4": 79.0, "5": 76.6, "6": 77.7, "7": 79.3}}
+128 of 128 match (results/5e044077726e-20261001T210300Z/samples-dev-staged-blake2b.txt)
+{"kernel":"staged","mode":"dev","gpu":"NVIDIA H200","gpus":1,"chunk":4096,"step":"mul","gib_per_gpu":135.000,"chunks":35389440,"tpb":128,"bpsm":8,"seconds":15.10,"attempts_per_s":2.6773e+07,"reads_per_s":2.1418e+08,"read_GBps":877.3,"remote_read_fraction":0.000,"fill_s":0.17}
+{"power_w_per_gpu": {"0": 299.7, "1": 76.7, "2": 79.0, "3": 76.9, "4": 78.9, "5": 76.6, "6": 77.6, "7": 79.4}}
+128 of 128 match (results/5e044077726e-20261001T210300Z/samples-dev-staged-mul.txt)
+== dataset split across 8 GPUs (104 GiB each), reads through peer pointers
+{"kernel":"staged","mode":"peer","gpu":"NVIDIA H200","gpus":8,"chunk":4096,"step":"blake2b","gib_per_gpu":104.000,"chunks":218103808,"tpb":128,"bpsm":8,"seconds":15.09,"attempts_per_s":1.0172e+08,"reads_per_s":8.1379e+08,"read_GBps":3333.3,"remote_read_fraction":0.766,"fill_s":1.25}
+{"power_w_per_gpu": {"0": 313.5, "1": 298.0, "2": 304.4, "3": 301.6, "4": 308.0, "5": 304.0, "6": 299.4, "7": 308.0}}
+128 of 128 match (results/5e044077726e-20261001T210300Z/samples-peer-staged-blake2b.txt)
+{"kernel":"staged","mode":"peer","gpu":"NVIDIA H200","gpus":8,"chunk":4096,"step":"mul","gib_per_gpu":104.000,"chunks":218103808,"tpb":128,"bpsm":8,"seconds":15.09,"attempts_per_s":1.0686e+08,"reads_per_s":8.5485e+08,"read_GBps":3501.4,"remote_read_fraction":0.766,"fill_s":1.24}
+{"power_w_per_gpu": {"0": 255.0, "1": 245.9, "2": 251.6, "3": 248.3, "4": 253.9, "5": 247.9, "6": 248.0, "7": 253.2}}
+128 of 128 match (results/5e044077726e-20261001T210300Z/samples-peer-staged-mul.txt)
+{"kernel":"stream","mode":"peer","gpu":"NVIDIA H200","gpus":8,"chunk":4096,"step":"blake2b","gib_per_gpu":104.000,"chunks":218103808,"tpb":128,"bpsm":8,"seconds":15.21,"attempts_per_s":6.5612e+07,"reads_per_s":5.2490e+08,"read_GBps":2150.0,"remote_read_fraction":0.766,"fill_s":1.23}
+{"power_w_per_gpu": {"0": 289.3, "1": 280.1, "2": 288.1, "3": 281.6, "4": 290.0, "5": 284.1, "6": 282.5, "7": 287.9}}
+128 of 128 match (results/5e044077726e-20261001T210300Z/samples-peer-stream-blake2b.txt)
+{"kernel":"stream","mode":"peer","gpu":"NVIDIA H200","gpus":8,"chunk":4096,"step":"mul","gib_per_gpu":104.000,"chunks":218103808,"tpb":128,"bpsm":8,"seconds":15.16,"attempts_per_s":6.5887e+07,"reads_per_s":5.2709e+08,"read_GBps":2159.0,"remote_read_fraction":0.766,"fill_s":1.24}
+{"power_w_per_gpu": {"0": 247.9, "1": 238.1, "2": 246.7, "3": 240.6, "4": 246.2, "5": 241.4, "6": 241.3, "7": 246.1}}
+128 of 128 match (results/5e044077726e-20261001T210300Z/samples-peer-stream-mul.txt)
+== CPU on the host (128 GiB, all threads, 8 lanes, 4 KiB reads)
+pure hash (no reads):        3.606e8 H/s   360.6 MH/s  [128 threads]
+RAM (k=8, 4096-byte reads, hashed, 8 lanes):      1.358e6 attempts/s   1.086e7 reads/s   44.49 GB/s   [128 GiB resident]
+pure hash (no reads):        3.596e8 H/s   359.6 MH/s  [128 threads]
+RAM (k=8, 4096-byte reads, fold, no hashing, 8 lanes):      5.391e6 attempts/s   4.313e7 reads/s   176.66 GB/s   [128 GiB resident]
+== done: results/5e044077726e-20261001T210300Z

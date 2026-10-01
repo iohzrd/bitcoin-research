@@ -1,0 +1,4 @@
+CPU(s):                               128
+Model name:                           Intel(R) Xeon(R) Platinum 8468
+Socket(s):                            2
+NUMA node(s):                         2

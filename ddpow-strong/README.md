@@ -75,6 +75,112 @@ Chained positions each come from a distinct digest; both layouts give the same c
 
 The RAM rate is 74% of the hashing cap and 65 times the drive's rate at full queue depth. The
 RAM rows are for datasets far below the chain's size; a 1 TB dataset adds more page-table walks.
+The rows above ran with the memory at its default timings (XMP off).
+
+With XMP on (2026-10-01, same machine, 64-byte reads, 32 threads):
+
+| run | before | XMP on | change |
+| --- | --- | --- | --- |
+| pure hash, no reads | 1.20e8 | 1.23e8 | +3% |
+| RAM, 4 GiB, 10 s | 1.070e7 | 1.211e7 (9.69e7 reads/s) | +13% |
+| RAM, 24 GiB, 20 s | 9.815e6 | 1.170e7 (9.36e7 reads/s) | +19% |
+| RAM, 24 GiB, 20 s, 8 lanes | - | 1.270e7 (1.016e8 reads/s) | - |
+| RAM, 24 GiB, 20 s, 8 lanes, `--nohash 1` | - | 4.157e7 (3.33e8 reads/s, 21.3 GB/s) | - |
+
+Hashing limits these runs: the 8-lane rate is 93% of the hashing cap (1.23e8 / 9), and memory
+alone serves 3.3 times it. The 4 GiB to 24 GiB gap fell from 8% to 3.4%. RAM is 78 times the
+drive's rate at 24 GiB, 85 times with 8 lanes.
+
+## Measured at 4 KiB, CPU and GPU (desktop as above, rustc 1.99.0; GPU: AMD Radeon RX 9070 XT, 64 compute units, 15.92 GiB GDDR6 rated 640 GB/s, PCIe Gen4 x16 at the CPU root port, ROCm/HIP 7.2.4; 2026-10-01; chained rule, k = 8)
+
+4,096-byte reads, each hashed whole: 33 compressions per step, 265 per attempt. GPU code:
+`gpu/` (HIP; every run's sampled attempts, 128 of 128, match Python `hashlib.blake2b`). 12 GiB
+datasets, 12 s GPU runs.
+
+| miner | attempts/s | reads/s | GB/s | power | bound by |
+| --- | --- | --- | --- | --- | --- |
+| GPU hashing ceiling (4,128-byte step, 3.99e9 compressions/s) | 1.51e7 | - | - | 303 W | compute, at the 304 W power cap |
+| GPU, data in GPU memory | 1.157e7 | 9.25e7 | 379 | 298 W | hashing (77% of the ceiling) |
+| GPU, data in pinned host memory, over PCIe | 9.49e5 | 7.60e6 | 31.1 | 130 W | PCIe (about 27.2 GB/s crosses the link, 96%; parent reads hit GPU cache) |
+| CPU, RAM, hashed (32 threads, 8 lanes) | 5.646e5 | 4.516e6 | 18.5 | - | hashing (1.50e8 compressions/s) |
+| CPU, RAM, folded (`--nohash 1`) | 9.181e5 | 7.345e6 | 30.1 | - | memory |
+
+- With XMP on (24 GiB, 8 lanes, 20 s): hashed 5.573e5 attempts/s (18.3 GB/s), unchanged
+  within noise (1.48e8 compressions/s); folded 1.244e6 attempts/s (9.95e6 reads/s, 40.8 GB/s),
+  36% above the row above, which by that gain probably ran with XMP off (not recorded). Memory
+  alone serves 2.2 times the hashed rate.
+- The GPU with data in its own memory is 20.5 times the CPU in RAM (35 times at 64 bytes); its
+  15.92 GiB cannot hold the chain. Reading host memory it is 1.68 times the CPU in RAM (1.45
+  times at 64 bytes).
+- NVMe at 4 KiB was not measured on the desktop. A drive reads one 4 KiB page per read at any
+  read size (laptop rows below), so its 1.5e5 attempts/s is expected to hold; the CPU in RAM
+  would then be 3.8 times the drive (65 times at 64 bytes).
+- Full 128-byte blocks compress at 3.99e9/s on the GPU, against 4.90e9/s for the mostly-zero
+  80-byte header. The CPU's 1.50e8 compressions/s on long inputs exceeds its 1.237e8/s header
+  rate.
+- One thread streaming its chunk beat a workgroup loading it into local data share (1.157e7
+  against 1.108e7 in GPU memory, 9.49e5 against 9.34e5 over PCIe): 9 waves per SIMD against 3.
+
+At 64 bytes on the same GPU (12 GiB): 3.42e8 attempts/s in GPU memory, limited by its random
+64-byte access rate (2.47e9 reads/s); 1.42e7 over PCIe, limited by about 116 reads in flight at
+about 1 µs each (1.16e8 reads/s). The desktop CPU at 64 bytes with 8 lanes: 1.280e7 attempts/s.
+
+## Measured on rented NVIDIA hardware (lium.io, 2026-10-01; chained rule, k = 8)
+
+`cuda/` (CUDA; data generated on each GPU, word j of chunk a = splitmix64(a * W + j); every run
+checked by `cuda/verify.py` against Python's `hashlib.blake2b`, 128 of 128 samples in each run).
+Machine: 8 x NVIDIA H200 SXM (141 GB HBM3e each, 700 W limit), every pair joined by NVLink
+through NVSwitch (NV18); host 2 x Intel Xeon Platinum 8468 (DDR5-4800, 8 channels per socket),
+128 threads visible to the container. Driver 580.173.02, CUDA 13.0. Raw results:
+`cuda/results/h200x8-swift-wolf-47-20261001/` (4 KiB) and `cuda/results/h200x8-chunks-20261001/`.
+
+Modes: one GPU with the dataset in its memory (135 GiB); the dataset split across all 8 GPUs
+(104 GiB each, 832 GiB in all, about the chain and tree's 773 GB), each read at a position on
+another GPU loaded through a peer pointer over NVLink (77% of reads). Steps: `blake2b` (the
+rule) and `fold` (XOR of the chunk's words, one compression: the read limit).
+
+4 KiB chunks, blake2b:
+
+| configuration | attempts/s | read GB/s | GPU power |
+| --- | --- | --- | --- |
+| one H200, dataset in cache (hashing ceiling) | 2.96e7 | 970 | 348 W |
+| one H200, 135 GiB, stream kernel | 2.78e7 | 910 | 484 W |
+| 8 x H200, 832 GiB split, staged kernel | 1.02e8 | 3,333 | 2.2 to 2.5 kW total |
+| 8 x H200, 832 GiB split, stream kernel | 6.56e7 | 2,150 | 2.3 kW total |
+| host CPU (DDR5), 128 GiB, 128 threads, 8 lanes, hashed | 1.36e6 | 44.5 | - |
+| host CPU (DDR5), 128 GiB, fold (`--nohash 1`) | 5.39e6 | 177 | - |
+
+The host CPU's hashed rate is its hashing limit (3.6e8 compressions/s, the `blake2` crate
+without vector instructions); its memory limit is 4 times that. Filling 832 GiB took 1.25 s.
+
+By chunk size, the split across 8 GPUs (attempts/s; the staged kernel from 256 bytes, the
+stream kernel at 64 bytes; GPU power total):
+
+| chunk | blake2b | fold | NVLink read GB/s | one H200, own memory, blake2b | GPU power, blake2b |
+| --- | --- | --- | --- | --- | --- |
+| 64 B | 3.30e9 | 4.25e9 | 1,691 to 2,176 | 6.93e8 | 2.3 kW |
+| 256 B | 1.55e9 | 1.71e9 | 3,169 to 3,494 | 2.40e8 | 2.6 kW |
+| 1 KiB | 4.04e8 | 4.28e8 | 3,313 to 3,503 | 8.47e7 | 2.3 kW |
+| 4 KiB | 1.02e8 | 1.07e8 | 3,334 to 3,501 | 2.23e7 | 2.2 kW |
+| 8 KiB | 5.09e7 | 5.34e7 | 3,334 to 3,497 | 1.13e7 | 2.3 kW |
+
+- From 256 bytes up the split is limited by NVLink: its read traffic stays at 3.3 to 3.5 TB/s
+  (8 x 450 GB/s per direction is the link rate), so its rate falls in proportion to chunk size.
+  At 4 KiB, blake2b is 5% below fold: hashing does not limit it.
+- Against one NVMe drive (1.5e5 attempts/s at full queue depth, any read size up to 4 KiB), the
+  node is 22,000x at 64 B, 10,300x at 256 B, 2,700x at 1 KiB and 680x at 4 KiB. Past 4 KiB a
+  drive reads more than one page per chunk (estimated: about half the rate at 8 KiB), so the
+  ratio stays near 680x while proof sections grow: 4 KiB is where the node's lead over a drive
+  stops falling.
+- Against the DDR5 host at 4 KiB: 75x (both measured).
+- Synthetic data costs the same per read as block data (positions come from hashes, reads are
+  fixed-size, the step functions take the same time on any input). Not modeled: block data is
+  partly compressible, so a miner could hold the chain compressed in fewer GPUs and decompress
+  per read.
+- Rented at $30 per hour for the 8 GPUs (lium.io, 2026-10-01).
+
+On the laptop's RTX 4070 Laptop GPU (8 GB, 2026-10-01; `cuda/README.md`): 4 KiB, 2 GiB, staged
+kernel, blake2b 3.9e6 to 4.5e6 and fold 6.7e6 attempts/s (220 GB/s).
 
 ## Measured (laptop: 24-thread CPU, one NVMe; 2026-09-28; chained rule)
 

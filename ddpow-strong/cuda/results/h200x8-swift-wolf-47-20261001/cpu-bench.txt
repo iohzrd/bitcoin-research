@@ -1,0 +1,4 @@
+pure hash (no reads):        3.606e8 H/s   360.6 MH/s  [128 threads]
+RAM (k=8, 4096-byte reads, hashed, 8 lanes):      1.358e6 attempts/s   1.086e7 reads/s   44.49 GB/s   [128 GiB resident]
+pure hash (no reads):        3.596e8 H/s   359.6 MH/s  [128 threads]
+RAM (k=8, 4096-byte reads, fold, no hashing, 8 lanes):      5.391e6 attempts/s   4.313e7 reads/s   176.66 GB/s   [128 GiB resident]

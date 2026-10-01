@@ -1,0 +1,91 @@
+index, name, memory.total [MiB], power.limit [W]
+0, NVIDIA H200, 143771 MiB, 700.00 W
+1, NVIDIA H200, 143771 MiB, 700.00 W
+2, NVIDIA H200, 143771 MiB, 700.00 W
+3, NVIDIA H200, 143771 MiB, 700.00 W
+4, NVIDIA H200, 143771 MiB, 700.00 W
+5, NVIDIA H200, 143771 MiB, 700.00 W
+6, NVIDIA H200, 143771 MiB, 700.00 W
+7, NVIDIA H200, 143771 MiB, 700.00 W
+== plan: 8 GPUs, dev 135 GiB, peer 104 GiB per GPU; 25 runs of 12 s: about 8 minutes (estimate)
+== 64-byte chunks (stream kernel)
+{"kernel":"stream","mode":"ceiling","gpu":"NVIDIA H200","gpus":1,"chunk":64,"step":"blake2b","gib_per_gpu":0.000,"chunks":4096,"tpb":128,"bpsm":8,"seconds":12.06,"attempts_per_s":8.2652e+08,"reads_per_s":6.6122e+09,"read_GBps":423.2,"remote_read_fraction":0.000,"fill_s":0.21}
+{"run": "ceiling-64", "power_w_total": 856.1}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-ceiling-64.txt)
+{"kernel":"stream","mode":"dev","gpu":"NVIDIA H200","gpus":1,"chunk":64,"step":"blake2b","gib_per_gpu":135.000,"chunks":2264924160,"tpb":128,"bpsm":8,"seconds":12.03,"attempts_per_s":6.9313e+08,"reads_per_s":5.5450e+09,"read_GBps":354.9,"remote_read_fraction":0.000,"fill_s":0.17}
+{"run": "dev-64-blake2b", "power_w_total": 898.3}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-dev-64-blake2b.txt)
+{"kernel":"stream","mode":"dev","gpu":"NVIDIA H200","gpus":1,"chunk":64,"step":"fold","gib_per_gpu":135.000,"chunks":2264924160,"tpb":128,"bpsm":8,"seconds":12.14,"attempts_per_s":7.5366e+08,"reads_per_s":6.0293e+09,"read_GBps":385.9,"remote_read_fraction":0.000,"fill_s":0.17}
+{"run": "dev-64-fold", "power_w_total": 920.6}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-dev-64-fold.txt)
+{"kernel":"stream","mode":"peer","gpu":"NVIDIA H200","gpus":8,"chunk":64,"step":"blake2b","gib_per_gpu":104.000,"chunks":13958643712,"tpb":128,"bpsm":8,"seconds":12.05,"attempts_per_s":3.3032e+09,"reads_per_s":2.6426e+10,"read_GBps":1691.2,"remote_read_fraction":0.766,"fill_s":1.26}
+{"run": "peer-64-blake2b", "power_w_total": 2340.8}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-peer-64-blake2b.txt)
+{"kernel":"stream","mode":"peer","gpu":"NVIDIA H200","gpus":8,"chunk":64,"step":"fold","gib_per_gpu":104.000,"chunks":13958643712,"tpb":128,"bpsm":8,"seconds":12.02,"attempts_per_s":4.2508e+09,"reads_per_s":3.4007e+10,"read_GBps":2176.4,"remote_read_fraction":0.766,"fill_s":1.26}
+{"run": "peer-64-fold", "power_w_total": 2874.5}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-peer-64-fold.txt)
+== 256-byte chunks (staged kernel)
+{"kernel":"stream","mode":"ceiling","gpu":"NVIDIA H200","gpus":1,"chunk":256,"step":"blake2b","gib_per_gpu":0.000,"chunks":1024,"tpb":128,"bpsm":8,"seconds":12.18,"attempts_per_s":2.1718e+08,"reads_per_s":1.7375e+09,"read_GBps":444.8,"remote_read_fraction":0.000,"fill_s":0.13}
+{"run": "ceiling-256", "power_w_total": 890.2}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-ceiling-256.txt)
+{"kernel":"staged","mode":"dev","gpu":"NVIDIA H200","gpus":1,"chunk":256,"step":"blake2b","gib_per_gpu":135.000,"chunks":566231040,"tpb":128,"bpsm":8,"seconds":12.16,"attempts_per_s":2.4021e+08,"reads_per_s":1.9216e+09,"read_GBps":491.9,"remote_read_fraction":0.000,"fill_s":0.26}
+{"run": "dev-256-blake2b", "power_w_total": 912.2}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-dev-256-blake2b.txt)
+{"kernel":"staged","mode":"dev","gpu":"NVIDIA H200","gpus":1,"chunk":256,"step":"fold","gib_per_gpu":135.000,"chunks":566231040,"tpb":128,"bpsm":8,"seconds":12.00,"attempts_per_s":4.2822e+08,"reads_per_s":3.4258e+09,"read_GBps":877.0,"remote_read_fraction":0.000,"fill_s":0.18}
+{"run": "dev-256-fold", "power_w_total": 900.9}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-dev-256-fold.txt)
+{"kernel":"staged","mode":"peer","gpu":"NVIDIA H200","gpus":8,"chunk":256,"step":"blake2b","gib_per_gpu":104.000,"chunks":3489660928,"tpb":128,"bpsm":8,"seconds":12.02,"attempts_per_s":1.5474e+09,"reads_per_s":1.2379e+10,"read_GBps":3169.0,"remote_read_fraction":0.766,"fill_s":1.26}
+{"run": "peer-256-blake2b", "power_w_total": 2627.8}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-peer-256-blake2b.txt)
+{"kernel":"staged","mode":"peer","gpu":"NVIDIA H200","gpus":8,"chunk":256,"step":"fold","gib_per_gpu":104.000,"chunks":3489660928,"tpb":128,"bpsm":8,"seconds":12.04,"attempts_per_s":1.7061e+09,"reads_per_s":1.3649e+10,"read_GBps":3494.2,"remote_read_fraction":0.766,"fill_s":1.24}
+{"run": "peer-256-fold", "power_w_total": 2181.4}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-peer-256-fold.txt)
+== 1024-byte chunks (staged kernel)
+{"kernel":"stream","mode":"ceiling","gpu":"NVIDIA H200","gpus":1,"chunk":1024,"step":"blake2b","gib_per_gpu":0.000,"chunks":256,"tpb":128,"bpsm":8,"seconds":12.20,"attempts_per_s":8.6427e+07,"reads_per_s":6.9141e+08,"read_GBps":708.0,"remote_read_fraction":0.000,"fill_s":0.13}
+{"run": "ceiling-1024", "power_w_total": 896.2}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-ceiling-1024.txt)
+{"kernel":"staged","mode":"dev","gpu":"NVIDIA H200","gpus":1,"chunk":1024,"step":"blake2b","gib_per_gpu":135.000,"chunks":141557760,"tpb":128,"bpsm":8,"seconds":12.03,"attempts_per_s":8.4698e+07,"reads_per_s":6.7759e+08,"read_GBps":693.8,"remote_read_fraction":0.000,"fill_s":0.56}
+{"run": "dev-1024-blake2b", "power_w_total": 911.8}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-dev-1024-blake2b.txt)
+{"kernel":"staged","mode":"dev","gpu":"NVIDIA H200","gpus":1,"chunk":1024,"step":"fold","gib_per_gpu":135.000,"chunks":141557760,"tpb":128,"bpsm":8,"seconds":12.05,"attempts_per_s":1.0673e+08,"reads_per_s":8.5385e+08,"read_GBps":874.3,"remote_read_fraction":0.000,"fill_s":0.17}
+{"run": "dev-1024-fold", "power_w_total": 825.9}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-dev-1024-fold.txt)
+{"kernel":"staged","mode":"peer","gpu":"NVIDIA H200","gpus":8,"chunk":1024,"step":"blake2b","gib_per_gpu":104.000,"chunks":872415232,"tpb":128,"bpsm":8,"seconds":12.10,"attempts_per_s":4.0438e+08,"reads_per_s":3.2350e+09,"read_GBps":3312.7,"remote_read_fraction":0.766,"fill_s":1.25}
+{"run": "peer-1024-blake2b", "power_w_total": 2330.5}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-peer-1024-blake2b.txt)
+{"kernel":"staged","mode":"peer","gpu":"NVIDIA H200","gpus":8,"chunk":1024,"step":"fold","gib_per_gpu":104.000,"chunks":872415232,"tpb":128,"bpsm":8,"seconds":12.16,"attempts_per_s":4.2766e+08,"reads_per_s":3.4213e+09,"read_GBps":3503.4,"remote_read_fraction":0.766,"fill_s":1.26}
+{"run": "peer-1024-fold", "power_w_total": 1866.3}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-peer-1024-fold.txt)
+== 4096-byte chunks (staged kernel)
+{"kernel":"stream","mode":"ceiling","gpu":"NVIDIA H200","gpus":1,"chunk":4096,"step":"blake2b","gib_per_gpu":0.000,"chunks":64,"tpb":128,"bpsm":8,"seconds":12.11,"attempts_per_s":2.9574e+07,"reads_per_s":2.3660e+08,"read_GBps":969.1,"remote_read_fraction":0.000,"fill_s":0.13}
+{"run": "ceiling-4096", "power_w_total": 970.3}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-ceiling-4096.txt)
+{"kernel":"staged","mode":"dev","gpu":"NVIDIA H200","gpus":1,"chunk":4096,"step":"blake2b","gib_per_gpu":135.000,"chunks":35389440,"tpb":128,"bpsm":8,"seconds":12.13,"attempts_per_s":2.2292e+07,"reads_per_s":1.7834e+08,"read_GBps":730.5,"remote_read_fraction":0.000,"fill_s":0.18}
+{"run": "dev-4096-blake2b", "power_w_total": 929.8}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-dev-4096-blake2b.txt)
+{"kernel":"staged","mode":"dev","gpu":"NVIDIA H200","gpus":1,"chunk":4096,"step":"fold","gib_per_gpu":135.000,"chunks":35389440,"tpb":128,"bpsm":8,"seconds":12.20,"attempts_per_s":2.6495e+07,"reads_per_s":2.1196e+08,"read_GBps":868.2,"remote_read_fraction":0.000,"fill_s":0.41}
+{"run": "dev-4096-fold", "power_w_total": 790.3}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-dev-4096-fold.txt)
+{"kernel":"staged","mode":"peer","gpu":"NVIDIA H200","gpus":8,"chunk":4096,"step":"blake2b","gib_per_gpu":104.000,"chunks":218103808,"tpb":128,"bpsm":8,"seconds":12.12,"attempts_per_s":1.0174e+08,"reads_per_s":8.1391e+08,"read_GBps":3333.8,"remote_read_fraction":0.766,"fill_s":1.66}
+{"run": "peer-4096-blake2b", "power_w_total": 2182.6}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-peer-4096-blake2b.txt)
+{"kernel":"staged","mode":"peer","gpu":"NVIDIA H200","gpus":8,"chunk":4096,"step":"fold","gib_per_gpu":104.000,"chunks":218103808,"tpb":128,"bpsm":8,"seconds":12.12,"attempts_per_s":1.0683e+08,"reads_per_s":8.5467e+08,"read_GBps":3500.7,"remote_read_fraction":0.766,"fill_s":1.46}
+{"run": "peer-4096-fold", "power_w_total": 1794.9}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-peer-4096-fold.txt)
+== 8192-byte chunks (staged kernel)
+{"kernel":"stream","mode":"ceiling","gpu":"NVIDIA H200","gpus":1,"chunk":8192,"step":"blake2b","gib_per_gpu":0.000,"chunks":32,"tpb":128,"bpsm":8,"seconds":12.22,"attempts_per_s":1.5490e+07,"reads_per_s":1.2392e+08,"read_GBps":1015.2,"remote_read_fraction":0.000,"fill_s":0.12}
+{"run": "ceiling-8192", "power_w_total": 972.5}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-ceiling-8192.txt)
+{"kernel":"staged","mode":"dev","gpu":"NVIDIA H200","gpus":1,"chunk":8192,"step":"blake2b","gib_per_gpu":135.000,"chunks":17694720,"tpb":128,"bpsm":8,"seconds":12.01,"attempts_per_s":1.1254e+07,"reads_per_s":9.0031e+07,"read_GBps":737.5,"remote_read_fraction":0.000,"fill_s":0.17}
+{"run": "dev-8192-blake2b", "power_w_total": 926.2}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-dev-8192-blake2b.txt)
+{"kernel":"staged","mode":"dev","gpu":"NVIDIA H200","gpus":1,"chunk":8192,"step":"fold","gib_per_gpu":135.000,"chunks":17694720,"tpb":128,"bpsm":8,"seconds":12.09,"attempts_per_s":1.3277e+07,"reads_per_s":1.0622e+08,"read_GBps":870.1,"remote_read_fraction":0.000,"fill_s":0.17}
+{"run": "dev-8192-fold", "power_w_total": 795.3}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-dev-8192-fold.txt)
+{"kernel":"staged","mode":"peer","gpu":"NVIDIA H200","gpus":8,"chunk":8192,"step":"blake2b","gib_per_gpu":104.000,"chunks":109051904,"tpb":128,"bpsm":8,"seconds":12.16,"attempts_per_s":5.0873e+07,"reads_per_s":4.0698e+08,"read_GBps":3334.0,"remote_read_fraction":0.766,"fill_s":1.25}
+{"run": "peer-8192-blake2b", "power_w_total": 2258.3}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-peer-8192-blake2b.txt)
+{"kernel":"staged","mode":"peer","gpu":"NVIDIA H200","gpus":8,"chunk":8192,"step":"fold","gib_per_gpu":104.000,"chunks":109051904,"tpb":128,"bpsm":8,"seconds":12.04,"attempts_per_s":5.3364e+07,"reads_per_s":4.2691e+08,"read_GBps":3497.2,"remote_read_fraction":0.766,"fill_s":1.27}
+{"run": "peer-8192-fold", "power_w_total": 1706.7}
+128 of 128 match (results/598163fe79f3-chunks-20261001T211909Z/samples-peer-8192-fold.txt)
+== done: results/598163fe79f3-chunks-20261001T211909Z

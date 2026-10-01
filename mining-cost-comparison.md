@@ -1,22 +1,23 @@
 # Mining cost and concentration: SHA256 versus the strong data-dependent rule
 
-2026-09-30
+2026-10-01
 
 Compares hashrate per dollar and its concentration across three cases: SHA256 mining as it
 is today, and the strong data-dependent rule (a chain read on every hash) run on a disk-bound
 home node versus a memory-resident server. All prices are approximate and market-dependent.
-Strong-rule rates are measured with `ddpow-strong` (read-per-hash, k = 8) on a desktop
-(Ryzen 9 5950X, 32 threads, Samsung 980 PRO); server rates are extrapolated from it by core
-count and clock. The RAM measurements use datasets of 4 and 24 GiB, not the full chain.
+Strong-rule rates are for the specification's 4,096-byte chunks, each hashed whole (265
+BLAKE2b compressions per attempt at k = 8), measured with `ddpow-strong` on a desktop (Ryzen 9
+5950X, 32 threads, Samsung 980 PRO) and an AMD Radeon RX 9070 XT (`ddpow-strong/README.md`).
+Server rates are extrapolated from the desktop by core count and clock. The RAM measurements
+use 12 GiB datasets, not the full chain.
 
 Summary. SHA256 hashrate per dollar is nearly constant across hardware sizes: an industrial
 miner is about 2 times a home device per dollar across a 242 times hashrate span. Under the
-strong rule a 1 TB DDR4 server is about 160 times a home node's rate for about 6 to 8 times its
-price: about 20 to 25 times better per dollar. The advantage falls as the chain grows, because
-memory costs about 62 times more per GB than NVMe: to about 10 times at 3 TB and toward about
-2.6 times as storage dominates both machines' cost. How fast depends on the growth rate: 3 TB is
-about 26 years away at the SHA256 chain's historical 84 GB per year, and about 150 to 450 years
-at this chain's post-fork 5 to 15 GB per year.
+strong rule with 4,096-byte chunks, hashing limits a memory-resident miner, so holding the
+chain in memory buys little: a 1 TB DDR4 server is about 9 times a home node's rate for about
+7.8 times its price, about 1.2 times per dollar (about 20 times with 64-byte chunks). A DDR5
+server is worse per dollar than a home node. As the chain grows, memory's cost per GB (about 62
+times NVMe's) makes the server worse per dollar than a disk node from about 1.4 TB on.
 
 ## 1. SHA256 mining (real hardware)
 
@@ -42,25 +43,26 @@ single machine.
 
 ## 2. Strong-rule mining (measured and extrapolated)
 
-The strong rule reads a chunk of the chain on every hash, so mining rate is bounded by
-read throughput over a stored copy of the chain, not by hash rate.
+The strong rule reads a 4,096-byte chunk of the chain on every step and hashes it whole, so a
+miner is limited by the slower of read throughput over its copy and BLAKE2b throughput.
 
 | regime | k = 8 attempts/s | bound by |
 | --- | --- | --- |
-| pure hash, no reads (desktop) | 1.20e8 | the hasher (ceiling) |
-| chain in memory (desktop, 24 GiB) | 9.8e6 | hashing (9 per attempt) and read latency |
-| chain in memory (56-core DDR4 server) | ~2.4e7 (extrapolated) | hashing |
-| chain on NVMe (980 PRO, O_DIRECT) | 5.7e4 at queue depth 24, 1.5e5 at 384 | the disk |
+| chain on NVMe (980 PRO, O_DIRECT, 384 threads) | 1.5e5 (measured at 64 bytes; a drive reads one 4 KiB page per read at either size) | the drive |
+| chain in RAM (desktop, 12 GiB) | 5.6e5 | hashing |
+| chain in RAM (56-core DDR4 server) | ~1.4e6 (extrapolated; memory allows ~3.7e6) | hashing |
+| GPU reading host RAM over PCIe Gen4 x16 (RX 9070 XT) | 9.5e5 | PCIe |
+| GPU, data in its own memory (12 GiB; cannot hold the chain) | 1.16e7 | hashing |
 
 A desktop cannot hold the chain in its memory, so a home node mines from NVMe.
 
 | miner | rate | power | price |
 | --- | --- | --- | --- |
 | home node (chain on NVMe) | 1.5e5 /s | ~100 W | ~$1,000 |
-| server, 1 TB DDR4 (chain in RAM) | ~2.4e7 /s | ~500 W | ~$7,800 |
+| server, 1 TB DDR4 (chain in RAM) | ~1.4e6 /s | ~500 W | ~$7,800 |
 
-The server does about 160 times the rate (about 420 times against the drive at queue depth 24)
-for about 7.8 times the cost: about 20 times better per dollar, and about 32 times per watt.
+The server does about 9.2 times the rate for about 7.8 times the cost: about 1.2 times better
+per dollar, and about 1.8 times per watt.
 
 ## 3. Memory and storage prices (September 2026)
 
@@ -83,55 +85,52 @@ Server to hold the chain in memory (1 TB): DDR4 about $7,800 (EPYC 7663 and boar
 | comparison | rate ratio | cost ratio | per-dollar advantage |
 | --- | --- | --- | --- |
 | SHA256: industrial over home | 242x | 120x | ~2x |
-| strong rule: DDR4 server over disk home | ~160x (420x at queue depth 24) | ~7.8x | ~20x (50x) |
-| strong rule: DDR5 server over disk home | ~290x | ~33 to 40x | ~7 to 9x |
+| strong rule: DDR4 server over disk home | ~9.2x | ~7.8x | ~1.2x |
+| strong rule: DDR5 server (96 cores, ~2.5e6 /s) over disk home | ~17x | ~33 to 40x | ~0.4 to 0.5x |
 
-The strong rule's per-dollar advantage for the larger miner is about 10 times that of SHA256
-(about 20 times versus 2 times).
+With 4,096-byte chunks the strong rule's per-dollar advantage for the larger miner is below
+SHA256's.
 
 ## 5. The advantage does not increase above server grade
 
-The advantage increases once, at the memory threshold, then stays constant:
-
-- A single CPU server is limited by BLAKE2b throughput, about 2e7 to 1e8 attempts per second
-  depending on core count and whether several attempts are hashed per vector instruction.
+- A CPU server is limited by BLAKE2b throughput: about 1.5e8 compressions per second per 16
+  desktop cores, 265 per attempt.
 - Scaling past one server means buying more servers, each holding its own full copy. Cost
   grows linearly, as with buying more SHA256 miners.
-- An 8-GPU H200 node (8 x 141 GB of high-bandwidth memory) holds the chain. Its estimated rate,
-  1.5e9 to 5e9 attempts per second, is limited by GPU hashing and NVLink; at $240,000 to
-  $320,000 in GPUs alone it is about equal to DDR4 servers per dollar. It matters for renting
-  (a majority attack for hours), not for buying.
+- A GPU adds hashing, but a consumer card's memory cannot hold the chain, and reading host
+  memory over PCIe Gen4 x16 caps it at about 9.5e5 attempts per second per card.
+- An 8-GPU H200 node (8 x 141 GB) holds the chain. Assuming it compresses BLAKE2b at the RX 9070
+  XT's measured 3.99e9 per second per GPU at the same 77% efficiency (not measured on an H200),
+  it is limited by hashing at about 9.3e7 attempts per second, about 67 times a DDR4 server. At
+  $240,000 to $320,000 in GPUs alone that is about 290 to 390 attempts per second per dollar,
+  against about 180 for the DDR4 server and 150 for the home node. It is 3.2 times the reset
+  rate of 2.86e7, which matters for renting (a majority attack for hours).
 
-So below the threshold (disk) a miner has a lower rate per dollar; at or above it (chain in
-memory) miners are roughly equal per dollar, and scaling further is linear.
-
-## 6. Chain growth reduces the advantage
+## 6. Chain growth reduces the server's advantage
 
 As the chain grows, the cost of both machines becomes storage-dominated, and because memory
 costs about 62 times more per GB than NVMe, the per-dollar advantage falls toward the rate
 ratio divided by that price ratio. Model: server $1,450 + $6.2/GB, home $900 + $0.10/GB, rates
 unchanged.
 
-| chain and tree size | server | home | per-dollar advantage | years at 84 GB/yr | years at 5 to 15 GB/yr |
+| chain and tree size | server | home | server per-dollar advantage | years at 84 GB/yr | years at 5 to 15 GB/yr |
 | --- | --- | --- | --- | --- | --- |
-| 773 GB (now) | $6,243 | $977 | ~25x | 0 | 0 |
-| 1.5 TB | $10,750 | $1,050 | ~16x | ~9 | ~48 to 145 |
-| 3 TB | $20,050 | $1,200 | ~10x | ~26 | ~150 to 450 |
-| 10 TB | $63,450 | $1,900 | ~5x | ~110 | ~615 to 1,850 |
-| asymptote | storage-dominated | | ~2.6x | | |
+| 773 GB (now) | $6,243 | $977 | ~1.45x | 0 | 0 |
+| 1.5 TB | $10,750 | $1,050 | ~0.9x | ~9 | ~48 to 145 |
+| 3 TB | $20,050 | $1,200 | ~0.55x | ~26 | ~150 to 450 |
+| 10 TB | $63,450 | $1,900 | ~0.28x | ~110 | ~615 to 1,850 |
+| asymptote | storage-dominated | | ~0.15x | | |
 
 Growth rates, sampled on the node: 84 GB per year on the SHA256 chain in the year before the
 fork (every 200th block); 96,273 bytes per block since the fork (every 20th block), which is
 5.1 GB per year at 600-second spacing and 15.1 GB per year at the measured 429 blocks per day.
-The earlier figure of 8 GB per year matched neither. NVMe random-read rates improving faster
-than memory latency would also reduce the advantage.
 
 ## Comparison across the three designs
 
-| property | SHA256 | weak data-dependent rule | strong data-dependent rule |
+| property | SHA256 | weak data-dependent rule | strong data-dependent rule (4,096-byte chunks) |
 | --- | --- | --- | --- |
-| cost depends on chain size | no | disk only (cheap) | memory (expensive) or disk |
-| per-dollar concentration | ~2x (constant) | binds the checker, not hashers | ~20x, falling as the chain grows |
+| cost depends on chain size | no | disk only (cheap) | yes, disk or memory |
+| per-dollar concentration | ~2x (constant) | binds the checker, not hashers | ~1.2x now; memory falls behind disk as the chain grows |
 | forces every miner to hold a node | no | no (binds the checker) | yes |
 | obsoletes current ASICs | no | no | yes (throttled to read rate) |
 

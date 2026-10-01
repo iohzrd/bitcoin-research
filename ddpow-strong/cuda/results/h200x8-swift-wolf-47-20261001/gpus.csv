@@ -1,0 +1,9 @@
+index, name, memory.total [MiB], power.limit [W], pcie.link.gen.current, pcie.link.width.current
+0, NVIDIA H200, 143771 MiB, 700.00 W, 5, 16
+1, NVIDIA H200, 143771 MiB, 700.00 W, 5, 16
+2, NVIDIA H200, 143771 MiB, 700.00 W, 5, 16
+3, NVIDIA H200, 143771 MiB, 700.00 W, 5, 16
+4, NVIDIA H200, 143771 MiB, 700.00 W, 5, 16
+5, NVIDIA H200, 143771 MiB, 700.00 W, 5, 16
+6, NVIDIA H200, 143771 MiB, 700.00 W, 5, 16
+7, NVIDIA H200, 143771 MiB, 700.00 W, 5, 16
