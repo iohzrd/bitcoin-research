@@ -1,0 +1,141 @@
+idle power: 26.2 W
+== c4k_step: sweep
+  mode=hash chunk=4096 impl=stream sb=1 gib=4.0 ilp=1 tpb=64 bpcu=4 vgpr_regs=110 occ_blocks_per_cu=24 rate=60694000.0 reads_per_s=0.0 avg_w=225.4 avg_sclk_mhz=3213 avg_mclk_mhz=772 seconds=2.069 compress_per_s=2002900000.0 bytes_per_s=0.0
+  mode=hash chunk=4096 impl=stream sb=1 gib=4.0 ilp=1 tpb=64 bpcu=8 vgpr_regs=110 occ_blocks_per_cu=24 rate=96243000.0 reads_per_s=0.0 avg_w=287.0 avg_sclk_mhz=3127 avg_mclk_mhz=772 seconds=2.126 compress_per_s=3176000000.0 bytes_per_s=0.0
+  mode=hash chunk=4096 impl=stream sb=1 gib=4.0 ilp=1 tpb=64 bpcu=16 vgpr_regs=110 occ_blocks_per_cu=24 rate=102900000.0 reads_per_s=0.0 avg_w=291.1 avg_sclk_mhz=3065 avg_mclk_mhz=772 seconds=2.033 compress_per_s=3395800000.0 bytes_per_s=0.0
+  mode=hash chunk=4096 impl=stream sb=1 gib=4.0 ilp=1 tpb=64 bpcu=32 vgpr_regs=110 occ_blocks_per_cu=24 rate=111710000.0 reads_per_s=0.0 avg_w=296.6 avg_sclk_mhz=3005 avg_mclk_mhz=772 seconds=2.006 compress_per_s=3686400000.0 bytes_per_s=0.0
+  mode=hash chunk=4096 impl=stream sb=1 gib=4.0 ilp=1 tpb=128 bpcu=4 vgpr_regs=110 occ_blocks_per_cu=12 rate=96172000.0 reads_per_s=0.0 avg_w=288.1 avg_sclk_mhz=3124 avg_mclk_mhz=772 seconds=2.089 compress_per_s=3173700000.0 bytes_per_s=0.0
+  mode=hash chunk=4096 impl=stream sb=1 gib=4.0 ilp=1 tpb=128 bpcu=8 vgpr_regs=110 occ_blocks_per_cu=12 rate=103000000.0 reads_per_s=0.0 avg_w=291.3 avg_sclk_mhz=3064 avg_mclk_mhz=772 seconds=2.129 compress_per_s=3399000000.0 bytes_per_s=0.0
+  mode=hash chunk=4096 impl=stream sb=1 gib=4.0 ilp=1 tpb=128 bpcu=16 vgpr_regs=110 occ_blocks_per_cu=12 rate=111270000.0 reads_per_s=0.0 avg_w=296.3 avg_sclk_mhz=3002 avg_mclk_mhz=772 seconds=2.083 compress_per_s=3672100000.0 bytes_per_s=0.0
+  mode=hash chunk=4096 impl=stream sb=1 gib=4.0 ilp=1 tpb=128 bpcu=32 vgpr_regs=110 occ_blocks_per_cu=12 rate=115760000.0 reads_per_s=0.0 avg_w=299.7 avg_sclk_mhz=2970 avg_mclk_mhz=772 seconds=2.14 compress_per_s=3820000000.0 bytes_per_s=0.0
+  mode=hash chunk=4096 impl=stream sb=1 gib=4.0 ilp=1 tpb=256 bpcu=4 vgpr_regs=110 occ_blocks_per_cu=6 rate=102580000.0 reads_per_s=0.0 avg_w=291.1 avg_sclk_mhz=3058 avg_mclk_mhz=772 seconds=2.01 compress_per_s=3385200000.0 bytes_per_s=0.0
+  mode=hash chunk=4096 impl=stream sb=1 gib=4.0 ilp=1 tpb=256 bpcu=8 vgpr_regs=110 occ_blocks_per_cu=6 rate=111560000.0 reads_per_s=0.0 avg_w=297.7 avg_sclk_mhz=2995 avg_mclk_mhz=772 seconds=2.077 compress_per_s=3681600000.0 bytes_per_s=0.0
+  mode=hash chunk=4096 impl=stream sb=1 gib=4.0 ilp=1 tpb=256 bpcu=16 vgpr_regs=110 occ_blocks_per_cu=6 rate=115320000.0 reads_per_s=0.0 avg_w=299.9 avg_sclk_mhz=2973 avg_mclk_mhz=772 seconds=2.128 compress_per_s=3805500000.0 bytes_per_s=0.0
+  mode=hash chunk=4096 impl=stream sb=1 gib=4.0 ilp=1 tpb=256 bpcu=32 vgpr_regs=110 occ_blocks_per_cu=6 rate=117920000.0 reads_per_s=0.0 avg_w=301.6 avg_sclk_mhz=2949 avg_mclk_mhz=772 seconds=2.023 compress_per_s=3891500000.0 bytes_per_s=0.0
+== c4k_step: final run with {'tpb': 256, 'bpcu': 32}
+  mode=hash chunk=4096 impl=stream sb=1 gib=4.0 ilp=1 tpb=256 bpcu=32 vgpr_regs=110 occ_blocks_per_cu=6 rate=120930000.0 reads_per_s=0.0 avg_w=303.2 avg_sclk_mhz=2948 avg_mclk_mhz=772 seconds=12.018 compress_per_s=3990800000.0 bytes_per_s=0.0
+  verify: step-4128-synthetic samples=128 match=128 mismatch=0 unwritten=0
+== c4k_dev_12gib_stream: sweep
+  mode=dev chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=64 bpcu=2 vgpr_regs=157 occ_blocks_per_cu=18 rate=4009300.0 reads_per_s=32074000.0 avg_w=192.9 avg_sclk_mhz=3276 avg_mclk_mhz=1258 seconds=2.113 compress_per_s=1062500000.0 bytes_per_s=131380000000.0
+  mode=dev chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=64 bpcu=4 vgpr_regs=157 occ_blocks_per_cu=18 rate=7849500.0 reads_per_s=62796000.0 avg_w=298.4 avg_sclk_mhz=3277 avg_mclk_mhz=1258 seconds=2.009 compress_per_s=2080100000.0 bytes_per_s=257210000000.0
+  mode=dev chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=64 bpcu=8 vgpr_regs=157 occ_blocks_per_cu=18 rate=11543000.0 reads_per_s=92346000.0 avg_w=300.3 avg_sclk_mhz=2945 avg_mclk_mhz=1258 seconds=2.015 compress_per_s=3059000000.0 bytes_per_s=378250000000.0
+  mode=dev chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=64 bpcu=16 vgpr_regs=157 occ_blocks_per_cu=18 rate=7238400.0 reads_per_s=57907000.0 avg_w=302.1 avg_sclk_mhz=3205 avg_mclk_mhz=1258 seconds=2.119 compress_per_s=1918200000.0 bytes_per_s=237190000000.0
+  mode=dev chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=128 bpcu=2 vgpr_regs=157 occ_blocks_per_cu=9 rate=7803000.0 reads_per_s=62424000.0 avg_w=292.3 avg_sclk_mhz=3254 avg_mclk_mhz=1258 seconds=2.102 compress_per_s=2067800000.0 bytes_per_s=255690000000.0
+  mode=dev chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=128 bpcu=4 vgpr_regs=157 occ_blocks_per_cu=9 rate=11531000.0 reads_per_s=92249000.0 avg_w=300.9 avg_sclk_mhz=2942 avg_mclk_mhz=1258 seconds=2.117 compress_per_s=3055800000.0 bytes_per_s=377850000000.0
+  mode=dev chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=128 bpcu=8 vgpr_regs=157 occ_blocks_per_cu=9 rate=7214600.0 reads_per_s=57717000.0 avg_w=301.4 avg_sclk_mhz=3203 avg_mclk_mhz=1258 seconds=2.166 compress_per_s=1911900000.0 bytes_per_s=236410000000.0
+  mode=dev chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=128 bpcu=16 vgpr_regs=157 occ_blocks_per_cu=9 rate=6064300.0 reads_per_s=48514000.0 avg_w=277.6 avg_sclk_mhz=3242 avg_mclk_mhz=1258 seconds=2.043 compress_per_s=1607000000.0 bytes_per_s=198710000000.0
+  mode=dev chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=256 bpcu=2 vgpr_regs=157 occ_blocks_per_cu=4 rate=11524000.0 reads_per_s=92191000.0 avg_w=300.9 avg_sclk_mhz=2941 avg_mclk_mhz=1258 seconds=2.133 compress_per_s=3053800000.0 bytes_per_s=377620000000.0
+  mode=dev chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=256 bpcu=4 vgpr_regs=157 occ_blocks_per_cu=4 rate=7281900.0 reads_per_s=58255000.0 avg_w=300.4 avg_sclk_mhz=3194 avg_mclk_mhz=1258 seconds=2.052 compress_per_s=1929700000.0 bytes_per_s=238610000000.0
+  mode=dev chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=256 bpcu=8 vgpr_regs=157 occ_blocks_per_cu=4 rate=7539600.0 reads_per_s=60317000.0 avg_w=299.6 avg_sclk_mhz=3182 avg_mclk_mhz=1258 seconds=2.008 compress_per_s=1998000000.0 bytes_per_s=247060000000.0
+  mode=dev chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=256 bpcu=16 vgpr_regs=157 occ_blocks_per_cu=4 rate=8333100.0 reads_per_s=66665000.0 avg_w=298.3 avg_sclk_mhz=3130 avg_mclk_mhz=1258 seconds=2.139 compress_per_s=2208300000.0 bytes_per_s=273060000000.0
+== c4k_dev_12gib_stream: final run with {'impl': 'stream', 'tpb': 64, 'bpcu': 8}
+  mode=dev chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=64 bpcu=8 vgpr_regs=157 occ_blocks_per_cu=18 rate=11566000.0 reads_per_s=92525000.0 avg_w=298.0 avg_sclk_mhz=2932 avg_mclk_mhz=1258 seconds=12.197 compress_per_s=3064900000.0 bytes_per_s=378980000000.0
+  verify: attempt-4096 n=3145728 s=3144704 samples=128 match=128 mismatch=0 unwritten=0
+== c4k_dev_12gib_coop: sweep
+  mode=dev chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=32 bpcu=2 vgpr_regs=137 occ_blocks_per_cu=14 rate=1440900.0 reads_per_s=11527000.0 avg_w=130.3 avg_sclk_mhz=3232 avg_mclk_mhz=1258 seconds=2.05 compress_per_s=381830000.0 bytes_per_s=47215000000.0
+  mode=dev chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=32 bpcu=4 vgpr_regs=137 occ_blocks_per_cu=14 rate=2888000.0 reads_per_s=23104000.0 avg_w=180.6 avg_sclk_mhz=3296 avg_mclk_mhz=1258 seconds=2.161 compress_per_s=765310000.0 bytes_per_s=94633000000.0
+  mode=dev chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=32 bpcu=8 vgpr_regs=137 occ_blocks_per_cu=14 rate=5690100.0 reads_per_s=45521000.0 avg_w=267.1 avg_sclk_mhz=3302 avg_mclk_mhz=1258 seconds=2.03 compress_per_s=1507900000.0 bytes_per_s=186450000000.0
+  mode=dev chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=32 bpcu=16 vgpr_regs=137 occ_blocks_per_cu=14 rate=9228100.0 reads_per_s=73825000.0 avg_w=304.1 avg_sclk_mhz=3090 avg_mclk_mhz=1258 seconds=2.109 compress_per_s=2445400000.0 bytes_per_s=302390000000.0
+  mode=dev chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=64 bpcu=2 vgpr_regs=137 occ_blocks_per_cu=7 rate=2913300.0 reads_per_s=23306000.0 avg_w=177.4 avg_sclk_mhz=3277 avg_mclk_mhz=1258 seconds=2.165 compress_per_s=772020000.0 bytes_per_s=95463000000.0
+  mode=dev chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=64 bpcu=4 vgpr_regs=137 occ_blocks_per_cu=7 rate=5605400.0 reads_per_s=44843000.0 avg_w=263.9 avg_sclk_mhz=3303 avg_mclk_mhz=1258 seconds=2.104 compress_per_s=1485400000.0 bytes_per_s=183680000000.0
+  mode=dev chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=64 bpcu=8 vgpr_regs=137 occ_blocks_per_cu=7 rate=9103400.0 reads_per_s=72827000.0 avg_w=304.1 avg_sclk_mhz=3103 avg_mclk_mhz=1258 seconds=2.07 compress_per_s=2412400000.0 bytes_per_s=298300000000.0
+  mode=dev chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=64 bpcu=16 vgpr_regs=137 occ_blocks_per_cu=7 rate=9217400.0 reads_per_s=73739000.0 avg_w=281.1 avg_sclk_mhz=2990 avg_mclk_mhz=1258 seconds=2.048 compress_per_s=2442600000.0 bytes_per_s=302040000000.0
+  mode=dev chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=128 bpcu=2 vgpr_regs=137 occ_blocks_per_cu=3 rate=5339800.0 reads_per_s=42718000.0 avg_w=251.4 avg_sclk_mhz=3262 avg_mclk_mhz=1258 seconds=2.025 compress_per_s=1415000000.0 bytes_per_s=174970000000.0
+  mode=dev chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=128 bpcu=4 vgpr_regs=137 occ_blocks_per_cu=3 rate=8953000.0 reads_per_s=71624000.0 avg_w=304.3 avg_sclk_mhz=3112 avg_mclk_mhz=1258 seconds=2.05 compress_per_s=2372600000.0 bytes_per_s=293370000000.0
+  mode=dev chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=128 bpcu=8 vgpr_regs=137 occ_blocks_per_cu=3 rate=9058400.0 reads_per_s=72467000.0 avg_w=282.9 avg_sclk_mhz=2987 avg_mclk_mhz=1258 seconds=2.084 compress_per_s=2400500000.0 bytes_per_s=296820000000.0
+  mode=dev chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=128 bpcu=16 vgpr_regs=137 occ_blocks_per_cu=3 rate=10871000.0 reads_per_s=86967000.0 avg_w=300.1 avg_sclk_mhz=2885 avg_mclk_mhz=1258 seconds=2.11 compress_per_s=2880800000.0 bytes_per_s=356220000000.0
+  mode=dev chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=256 bpcu=2 vgpr_regs=137 occ_blocks_per_cu=1 rate=8642000.0 reads_per_s=69136000.0 avg_w=304.4 avg_sclk_mhz=3157 avg_mclk_mhz=1258 seconds=2.106 compress_per_s=2290100000.0 bytes_per_s=283180000000.0
+  mode=dev chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=256 bpcu=4 vgpr_regs=137 occ_blocks_per_cu=1 rate=8672700.0 reads_per_s=69381000.0 avg_w=294.4 avg_sclk_mhz=3052 avg_mclk_mhz=1258 seconds=2.161 compress_per_s=2298300000.0 bytes_per_s=284190000000.0
+  mode=dev chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=256 bpcu=8 vgpr_regs=137 occ_blocks_per_cu=1 rate=10016000.0 reads_per_s=80130000.0 avg_w=303.1 avg_sclk_mhz=2944 avg_mclk_mhz=1258 seconds=2.061 compress_per_s=2654300000.0 bytes_per_s=328210000000.0
+  mode=dev chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=256 bpcu=16 vgpr_regs=137 occ_blocks_per_cu=1 rate=10548000.0 reads_per_s=84384000.0 avg_w=302.4 avg_sclk_mhz=2941 avg_mclk_mhz=1258 seconds=2.013 compress_per_s=2795200000.0 bytes_per_s=345640000000.0
+  mode=dev chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=32 bpcu=2 vgpr_regs=219 occ_blocks_per_cu=5 rate=1475400.0 reads_per_s=11804000.0 avg_w=133.3 avg_sclk_mhz=3272 avg_mclk_mhz=1258 seconds=2.027 compress_per_s=390990000.0 bytes_per_s=48347000000.0
+  mode=dev chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=32 bpcu=4 vgpr_regs=219 occ_blocks_per_cu=5 rate=2967400.0 reads_per_s=23740000.0 avg_w=184.3 avg_sclk_mhz=3317 avg_mclk_mhz=1258 seconds=2.029 compress_per_s=786370000.0 bytes_per_s=97237000000.0
+  mode=dev chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=32 bpcu=8 vgpr_regs=219 occ_blocks_per_cu=5 rate=5709700.0 reads_per_s=45677000.0 avg_w=263.7 avg_sclk_mhz=3303 avg_mclk_mhz=1258 seconds=2.099 compress_per_s=1513100000.0 bytes_per_s=187090000000.0
+  mode=dev chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=32 bpcu=16 vgpr_regs=219 occ_blocks_per_cu=5 rate=5520500.0 reads_per_s=44164000.0 avg_w=258.3 avg_sclk_mhz=3306 avg_mclk_mhz=1258 seconds=2.089 compress_per_s=1462900000.0 bytes_per_s=180900000000.0
+  mode=dev chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=64 bpcu=2 vgpr_regs=219 occ_blocks_per_cu=2 rate=2960000.0 reads_per_s=23680000.0 avg_w=188.1 avg_sclk_mhz=3346 avg_mclk_mhz=1258 seconds=2.192 compress_per_s=784410000.0 bytes_per_s=96995000000.0
+  mode=dev chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=64 bpcu=4 vgpr_regs=219 occ_blocks_per_cu=2 rate=5743200.0 reads_per_s=45945000.0 avg_w=262.4 avg_sclk_mhz=3307 avg_mclk_mhz=1258 seconds=2.028 compress_per_s=1521900000.0 bytes_per_s=188190000000.0
+  mode=dev chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=64 bpcu=8 vgpr_regs=219 occ_blocks_per_cu=2 rate=5481300.0 reads_per_s=43851000.0 avg_w=256.4 avg_sclk_mhz=3306 avg_mclk_mhz=1258 seconds=2.006 compress_per_s=1452600000.0 bytes_per_s=179610000000.0
+  mode=dev chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=64 bpcu=16 vgpr_regs=219 occ_blocks_per_cu=2 rate=5738500.0 reads_per_s=45908000.0 avg_w=263.1 avg_sclk_mhz=3298 avg_mclk_mhz=1258 seconds=2.073 compress_per_s=1520700000.0 bytes_per_s=188040000000.0
+  mode=dev chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=128 bpcu=2 vgpr_regs=219 occ_blocks_per_cu=1 rate=5617800.0 reads_per_s=44942000.0 avg_w=261.0 avg_sclk_mhz=3304 avg_mclk_mhz=1258 seconds=2.012 compress_per_s=1488700000.0 bytes_per_s=184080000000.0
+  mode=dev chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=128 bpcu=4 vgpr_regs=219 occ_blocks_per_cu=1 rate=5634400.0 reads_per_s=45075000.0 avg_w=261.3 avg_sclk_mhz=3302 avg_mclk_mhz=1258 seconds=2.152 compress_per_s=1493100000.0 bytes_per_s=184630000000.0
+  mode=dev chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=128 bpcu=8 vgpr_regs=219 occ_blocks_per_cu=1 rate=5653100.0 reads_per_s=45224000.0 avg_w=261.6 avg_sclk_mhz=3305 avg_mclk_mhz=1258 seconds=2.104 compress_per_s=1498100000.0 bytes_per_s=185240000000.0
+  mode=dev chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=128 bpcu=16 vgpr_regs=219 occ_blocks_per_cu=1 rate=5693400.0 reads_per_s=45547000.0 avg_w=262.0 avg_sclk_mhz=3304 avg_mclk_mhz=1258 seconds=2.072 compress_per_s=1508800000.0 bytes_per_s=186560000000.0
+== c4k_dev_12gib_coop: final run with {'impl': 'coop', 'sb': 1, 'tpb': 128, 'bpcu': 16}
+  mode=dev chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=128 bpcu=16 vgpr_regs=137 occ_blocks_per_cu=3 rate=11076000.0 reads_per_s=88611000.0 avg_w=298.2 avg_sclk_mhz=2885 avg_mclk_mhz=1258 seconds=12.289 compress_per_s=2935200000.0 bytes_per_s=362950000000.0
+  verify: attempt-4096 n=3145728 s=3144704 samples=128 match=128 mismatch=0 unwritten=0
+== c4k_host_12gib_stream: sweep
+  mode=host chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=64 bpcu=2 vgpr_regs=157 occ_blocks_per_cu=18 rate=949310.0 reads_per_s=7594500.0 avg_w=126.9 avg_sclk_mhz=3340 avg_mclk_mhz=1258 seconds=3.003 compress_per_s=251570000.0 bytes_per_s=31107000000.0
+  mode=host chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=64 bpcu=4 vgpr_regs=157 occ_blocks_per_cu=18 rate=858940.0 reads_per_s=6871500.0 avg_w=128.1 avg_sclk_mhz=3358 avg_mclk_mhz=1258 seconds=3.09 compress_per_s=227620000.0 bytes_per_s=28146000000.0
+  mode=host chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=64 bpcu=8 vgpr_regs=157 occ_blocks_per_cu=18 rate=692540.0 reads_per_s=5540300.0 avg_w=129.2 avg_sclk_mhz=3365 avg_mclk_mhz=1258 seconds=3.076 compress_per_s=183520000.0 bytes_per_s=22693000000.0
+  mode=host chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=64 bpcu=16 vgpr_regs=157 occ_blocks_per_cu=18 rate=426610.0 reads_per_s=3412900.0 avg_w=130.2 avg_sclk_mhz=3389 avg_mclk_mhz=1258 seconds=3.226 compress_per_s=113050000.0 bytes_per_s=13979000000.0
+  mode=host chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=128 bpcu=2 vgpr_regs=157 occ_blocks_per_cu=9 rate=858580.0 reads_per_s=6868600.0 avg_w=126.8 avg_sclk_mhz=3366 avg_mclk_mhz=1258 seconds=3.091 compress_per_s=227520000.0 bytes_per_s=28134000000.0
+  mode=host chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=128 bpcu=4 vgpr_regs=157 occ_blocks_per_cu=9 rate=689080.0 reads_per_s=5512600.0 avg_w=127.8 avg_sclk_mhz=3364 avg_mclk_mhz=1258 seconds=3.091 compress_per_s=182600000.0 bytes_per_s=22580000000.0
+  mode=host chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=128 bpcu=8 vgpr_regs=157 occ_blocks_per_cu=9 rate=429270.0 reads_per_s=3434200.0 avg_w=129.4 avg_sclk_mhz=3394 avg_mclk_mhz=1258 seconds=3.053 compress_per_s=113760000.0 bytes_per_s=14066000000.0
+  mode=host chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=128 bpcu=16 vgpr_regs=157 occ_blocks_per_cu=9 rate=413580.0 reads_per_s=3308700.0 avg_w=129.2 avg_sclk_mhz=3400 avg_mclk_mhz=1258 seconds=3.169 compress_per_s=109600000.0 bytes_per_s=13552000000.0
+  mode=host chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=256 bpcu=2 vgpr_regs=157 occ_blocks_per_cu=4 rate=685040.0 reads_per_s=5480300.0 avg_w=128.1 avg_sclk_mhz=3371 avg_mclk_mhz=1258 seconds=3.109 compress_per_s=181540000.0 bytes_per_s=22447000000.0
+  mode=host chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=256 bpcu=4 vgpr_regs=157 occ_blocks_per_cu=4 rate=435180.0 reads_per_s=3481400.0 avg_w=128.6 avg_sclk_mhz=3392 avg_mclk_mhz=1258 seconds=3.012 compress_per_s=115320000.0 bytes_per_s=14260000000.0
+  mode=host chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=256 bpcu=8 vgpr_regs=157 occ_blocks_per_cu=4 rate=440180.0 reads_per_s=3521400.0 avg_w=129.2 avg_sclk_mhz=3400 avg_mclk_mhz=1258 seconds=3.275 compress_per_s=116650000.0 bytes_per_s=14424000000.0
+  mode=host chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=256 bpcu=16 vgpr_regs=157 occ_blocks_per_cu=4 rate=441720.0 reads_per_s=3533700.0 avg_w=128.8 avg_sclk_mhz=3402 avg_mclk_mhz=1258 seconds=3.561 compress_per_s=117050000.0 bytes_per_s=14474000000.0
+== c4k_host_12gib_stream: final run with {'impl': 'stream', 'tpb': 64, 'bpcu': 2}
+  mode=host chunk=4096 impl=stream sb=1 gib=12.0 ilp=1 tpb=64 bpcu=2 vgpr_regs=157 occ_blocks_per_cu=18 rate=949420.0 reads_per_s=7595400.0 avg_w=130.0 avg_sclk_mhz=3399 avg_mclk_mhz=1258 seconds=12.17 compress_per_s=251600000.0 bytes_per_s=31111000000.0
+  verify: attempt-4096 n=3145728 s=3144704 samples=128 match=128 mismatch=0 unwritten=0
+== c4k_host_12gib_coop: sweep
+  mode=host chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=32 bpcu=2 vgpr_regs=137 occ_blocks_per_cu=14 rate=880780.0 reads_per_s=7046200.0 avg_w=121.9 avg_sclk_mhz=3354 avg_mclk_mhz=1258 seconds=3.204 compress_per_s=233410000.0 bytes_per_s=28861000000.0
+  mode=host chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=32 bpcu=4 vgpr_regs=137 occ_blocks_per_cu=14 rate=933770.0 reads_per_s=7470200.0 avg_w=127.1 avg_sclk_mhz=3365 avg_mclk_mhz=1258 seconds=3.193 compress_per_s=247450000.0 bytes_per_s=30598000000.0
+  mode=host chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=32 bpcu=8 vgpr_regs=137 occ_blocks_per_cu=14 rate=889150.0 reads_per_s=7113200.0 avg_w=125.7 avg_sclk_mhz=3358 avg_mclk_mhz=1258 seconds=3.234 compress_per_s=235620000.0 bytes_per_s=29136000000.0
+  mode=host chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=32 bpcu=16 vgpr_regs=137 occ_blocks_per_cu=14 rate=627700.0 reads_per_s=5021600.0 avg_w=121.6 avg_sclk_mhz=3379 avg_mclk_mhz=1258 seconds=3.054 compress_per_s=166340000.0 bytes_per_s=20569000000.0
+  mode=host chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=64 bpcu=2 vgpr_regs=137 occ_blocks_per_cu=7 rate=931770.0 reads_per_s=7454200.0 avg_w=124.3 avg_sclk_mhz=3352 avg_mclk_mhz=1258 seconds=3.2 compress_per_s=246920000.0 bytes_per_s=30532000000.0
+  mode=host chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=64 bpcu=4 vgpr_regs=137 occ_blocks_per_cu=7 rate=903560.0 reads_per_s=7228500.0 avg_w=125.9 avg_sclk_mhz=3360 avg_mclk_mhz=1258 seconds=3.182 compress_per_s=239440000.0 bytes_per_s=29608000000.0
+  mode=host chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=64 bpcu=8 vgpr_regs=137 occ_blocks_per_cu=7 rate=612530.0 reads_per_s=4900200.0 avg_w=119.7 avg_sclk_mhz=3373 avg_mclk_mhz=1258 seconds=3.13 compress_per_s=162320000.0 bytes_per_s=20071000000.0
+  mode=host chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=64 bpcu=16 vgpr_regs=137 occ_blocks_per_cu=7 rate=576910.0 reads_per_s=4615300.0 avg_w=124.8 avg_sclk_mhz=3390 avg_mclk_mhz=1258 seconds=3.181 compress_per_s=152880000.0 bytes_per_s=18904000000.0
+  mode=host chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=128 bpcu=2 vgpr_regs=137 occ_blocks_per_cu=3 rate=883830.0 reads_per_s=7070600.0 avg_w=124.8 avg_sclk_mhz=3357 avg_mclk_mhz=1258 seconds=3.003 compress_per_s=234220000.0 bytes_per_s=28961000000.0
+  mode=host chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=128 bpcu=4 vgpr_regs=137 occ_blocks_per_cu=3 rate=604200.0 reads_per_s=4833600.0 avg_w=120.1 avg_sclk_mhz=3382 avg_mclk_mhz=1258 seconds=3.173 compress_per_s=160110000.0 bytes_per_s=19798000000.0
+  mode=host chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=128 bpcu=8 vgpr_regs=137 occ_blocks_per_cu=3 rate=573680.0 reads_per_s=4589400.0 avg_w=123.8 avg_sclk_mhz=3390 avg_mclk_mhz=1258 seconds=3.199 compress_per_s=152020000.0 bytes_per_s=18798000000.0
+  mode=host chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=128 bpcu=16 vgpr_regs=137 occ_blocks_per_cu=3 rate=572840.0 reads_per_s=4582700.0 avg_w=124.9 avg_sclk_mhz=3403 avg_mclk_mhz=1258 seconds=3.203 compress_per_s=151800000.0 bytes_per_s=18771000000.0
+  mode=host chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=256 bpcu=2 vgpr_regs=137 occ_blocks_per_cu=1 rate=601640.0 reads_per_s=4813100.0 avg_w=118.9 avg_sclk_mhz=3376 avg_mclk_mhz=1258 seconds=3.186 compress_per_s=159430000.0 bytes_per_s=19714000000.0
+  mode=host chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=256 bpcu=4 vgpr_regs=137 occ_blocks_per_cu=1 rate=613240.0 reads_per_s=4905900.0 avg_w=121.3 avg_sclk_mhz=3391 avg_mclk_mhz=1258 seconds=3.206 compress_per_s=162510000.0 bytes_per_s=20095000000.0
+  mode=host chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=256 bpcu=8 vgpr_regs=137 occ_blocks_per_cu=1 rate=572120.0 reads_per_s=4577000.0 avg_w=122.2 avg_sclk_mhz=3404 avg_mclk_mhz=1258 seconds=3.207 compress_per_s=151610000.0 bytes_per_s=18747000000.0
+  mode=host chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=256 bpcu=16 vgpr_regs=137 occ_blocks_per_cu=1 rate=569070.0 reads_per_s=4552600.0 avg_w=121.8 avg_sclk_mhz=3406 avg_mclk_mhz=1258 seconds=3.225 compress_per_s=150800000.0 bytes_per_s=18647000000.0
+  mode=host chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=32 bpcu=2 vgpr_regs=219 occ_blocks_per_cu=5 rate=745570.0 reads_per_s=5964500.0 avg_w=117.2 avg_sclk_mhz=3364 avg_mclk_mhz=1258 seconds=3.164 compress_per_s=197580000.0 bytes_per_s=24431000000.0
+  mode=host chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=32 bpcu=4 vgpr_regs=219 occ_blocks_per_cu=5 rate=929010.0 reads_per_s=7432100.0 avg_w=123.4 avg_sclk_mhz=3365 avg_mclk_mhz=1258 seconds=3.21 compress_per_s=246190000.0 bytes_per_s=30442000000.0
+  mode=host chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=32 bpcu=8 vgpr_regs=219 occ_blocks_per_cu=5 rate=841130.0 reads_per_s=6729000.0 avg_w=122.3 avg_sclk_mhz=3363 avg_mclk_mhz=1258 seconds=3.165 compress_per_s=222900000.0 bytes_per_s=27562000000.0
+  mode=host chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=32 bpcu=16 vgpr_regs=219 occ_blocks_per_cu=5 rate=841660.0 reads_per_s=6733300.0 avg_w=123.0 avg_sclk_mhz=3372 avg_mclk_mhz=1258 seconds=3.037 compress_per_s=223040000.0 bytes_per_s=27580000000.0
+  mode=host chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=64 bpcu=2 vgpr_regs=219 occ_blocks_per_cu=2 rate=926330.0 reads_per_s=7410600.0 avg_w=121.5 avg_sclk_mhz=3351 avg_mclk_mhz=1258 seconds=3.219 compress_per_s=245480000.0 bytes_per_s=30354000000.0
+  mode=host chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=64 bpcu=4 vgpr_regs=219 occ_blocks_per_cu=2 rate=841960.0 reads_per_s=6735600.0 avg_w=122.8 avg_sclk_mhz=3370 avg_mclk_mhz=1258 seconds=3.162 compress_per_s=223120000.0 bytes_per_s=27589000000.0
+  mode=host chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=64 bpcu=8 vgpr_regs=219 occ_blocks_per_cu=2 rate=827230.0 reads_per_s=6617800.0 avg_w=122.9 avg_sclk_mhz=3369 avg_mclk_mhz=1258 seconds=3.09 compress_per_s=219220000.0 bytes_per_s=27107000000.0
+  mode=host chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=64 bpcu=16 vgpr_regs=219 occ_blocks_per_cu=2 rate=789640.0 reads_per_s=6317100.0 avg_w=123.6 avg_sclk_mhz=3380 avg_mclk_mhz=1258 seconds=3.237 compress_per_s=209250000.0 bytes_per_s=25875000000.0
+  mode=host chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=128 bpcu=2 vgpr_regs=219 occ_blocks_per_cu=1 rate=847330.0 reads_per_s=6778600.0 avg_w=123.1 avg_sclk_mhz=3363 avg_mclk_mhz=1258 seconds=3.142 compress_per_s=224540000.0 bytes_per_s=27765000000.0
+  mode=host chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=128 bpcu=4 vgpr_regs=219 occ_blocks_per_cu=1 rate=847510.0 reads_per_s=6780100.0 avg_w=124.3 avg_sclk_mhz=3371 avg_mclk_mhz=1258 seconds=3.016 compress_per_s=224590000.0 bytes_per_s=27771000000.0
+  mode=host chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=128 bpcu=8 vgpr_regs=219 occ_blocks_per_cu=1 rate=846900.0 reads_per_s=6775200.0 avg_w=125.0 avg_sclk_mhz=3371 avg_mclk_mhz=1258 seconds=3.018 compress_per_s=224430000.0 bytes_per_s=27751000000.0
+  mode=host chunk=4096 impl=coop sb=3 gib=12.0 ilp=1 tpb=128 bpcu=16 vgpr_regs=219 occ_blocks_per_cu=1 rate=847770.0 reads_per_s=6782200.0 avg_w=128.0 avg_sclk_mhz=3390 avg_mclk_mhz=1258 seconds=3.015 compress_per_s=224660000.0 bytes_per_s=27780000000.0
+== c4k_host_12gib_coop: final run with {'impl': 'coop', 'sb': 1, 'tpb': 32, 'bpcu': 4}
+  mode=host chunk=4096 impl=coop sb=1 gib=12.0 ilp=1 tpb=32 bpcu=4 vgpr_regs=137 occ_blocks_per_cu=14 rate=934270.0 reads_per_s=7474100.0 avg_w=132.0 avg_sclk_mhz=3398 avg_mclk_mhz=1258 seconds=12.368 compress_per_s=247580000.0 bytes_per_s=30614000000.0
+  verify: attempt-4096 n=3145728 s=3144704 samples=128 match=128 mismatch=0 unwritten=0
+== c4k_probe_host: 4096-byte random reads, no hashing
+  impl=stream tpb=64 bpcu=2 reads_per_s=7.0779e+06 bytes_per_s=2.8991e+10 avg_w=112.9
+  impl=stream tpb=64 bpcu=8 reads_per_s=7.0304e+06 bytes_per_s=2.8797e+10 avg_w=116.8
+  impl=stream tpb=64 bpcu=32 reads_per_s=6.9247e+06 bytes_per_s=2.8363e+10 avg_w=122.8
+  impl=stream tpb=256 bpcu=2 reads_per_s=7.0450e+06 bytes_per_s=2.8856e+10 avg_w=117.4
+  impl=stream tpb=256 bpcu=8 reads_per_s=6.9248e+06 bytes_per_s=2.8364e+10 avg_w=124.0
+  impl=stream tpb=256 bpcu=32 reads_per_s=6.9194e+06 bytes_per_s=2.8342e+10 avg_w=125.6
+  impl=coop tpb=64 bpcu=2 reads_per_s=6.9165e+06 bytes_per_s=2.8330e+10 avg_w=109.2
+  impl=coop tpb=64 bpcu=8 reads_per_s=6.9182e+06 bytes_per_s=2.8337e+10 avg_w=109.2
+  impl=coop tpb=64 bpcu=32 reads_per_s=6.9098e+06 bytes_per_s=2.8303e+10 avg_w=125.6
+  impl=coop tpb=256 bpcu=2 reads_per_s=6.9172e+06 bytes_per_s=2.8333e+10 avg_w=110.2
+  impl=coop tpb=256 bpcu=8 reads_per_s=6.9078e+06 bytes_per_s=2.8294e+10 avg_w=124.3
+  impl=coop tpb=256 bpcu=32 reads_per_s=6.9174e+06 bytes_per_s=2.8334e+10 avg_w=122.8
+  sequential: bytes_per_s=2.8316e+10
+== c4k_probe_dev: 4096-byte random reads, no hashing
+  impl=stream tpb=64 bpcu=2 reads_per_s=1.8885e+08 bytes_per_s=7.7353e+11 avg_w=199.0
+  impl=stream tpb=64 bpcu=8 reads_per_s=1.5886e+08 bytes_per_s=6.5069e+11 avg_w=198.3
+  impl=stream tpb=64 bpcu=32 reads_per_s=1.4201e+08 bytes_per_s=5.8167e+11 avg_w=203.9
+  impl=stream tpb=256 bpcu=2 reads_per_s=1.5515e+08 bytes_per_s=6.3550e+11 avg_w=203.5
+  impl=stream tpb=256 bpcu=8 reads_per_s=1.4186e+08 bytes_per_s=5.8108e+11 avg_w=204.3
+  impl=stream tpb=256 bpcu=32 reads_per_s=1.4155e+08 bytes_per_s=5.7979e+11 avg_w=204.3
+  impl=coop tpb=64 bpcu=2 reads_per_s=1.5577e+08 bytes_per_s=6.3805e+11 avg_w=194.2
+  impl=coop tpb=64 bpcu=8 reads_per_s=1.5622e+08 bytes_per_s=6.3988e+11 avg_w=194.1
+  impl=coop tpb=64 bpcu=32 reads_per_s=1.5498e+08 bytes_per_s=6.3479e+11 avg_w=203.4
+  impl=coop tpb=256 bpcu=2 reads_per_s=1.5672e+08 bytes_per_s=6.4191e+11 avg_w=194.0
+  impl=coop tpb=256 bpcu=8 reads_per_s=1.5511e+08 bytes_per_s=6.3534e+11 avg_w=203.2
+  impl=coop tpb=256 bpcu=32 reads_per_s=1.5634e+08 bytes_per_s=6.4039e+11 avg_w=204.3
+  sequential: bytes_per_s=6.3497e+11
