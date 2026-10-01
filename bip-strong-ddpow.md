@@ -230,6 +230,14 @@ the same chunks without new reads.
 The commitment fixes the contents of every chunk position before `h0` exists, so a miner cannot
 search over chunk contents for a low `final`.
 
+Proof sections are not necessary to check a block's work: a node holding blocks `0..P` can read
+the chunks of block `P + 1`'s attempt from its own copy and recompute `final`. Without proof
+sections, however, every validating node would have to keep every block from genesis, since
+reads 1 to `k - 1` fall anywhere in the chain, so pruned nodes could not validate; a node could
+not check a header's work before downloading every block before it, which removes the work check
+that bounds the headers a peer can make a synchronizing node store; and light clients could not
+check work at all.
+
 The proof section cannot be included in the block hash input: committing it in the header or the
 transaction Merkle root changes `h0`, which changes the read positions it proves. It needs no
 hash commitment because it has one valid value for a given header and chain; changing any byte
@@ -349,19 +357,54 @@ block after the anchor, so the fabricated share can grow by `C_max` chunks per b
   How chains that diverge before `A` are compared is not specified.
 - Block announcements: how a node obtains the proof section of a block announced by `headers`
   or `inv` is not specified.
-- Who carries the reads: while `N < 2^28` a proof section is at most 40,244 bytes, of which at
-  most 39,680 are the reads (8 chunks with their paths) and at most 564 the tree extension
-  (`len`, `N`, `S` and at most 17 `ext` roots). Every node following headers needs the extension
-  to advance its peaks; only a node checking a block's work from its proof needs the reads.
-  Archival nodes can check the reads against their own chain; pruned validators need the reads
-  of every block; light clients and headers-first synchronization could check the reads of the
-  most recent headers and of a random sample of earlier ones; read 0's chunk is in the parent
-  block, which a node holding the parent need not receive. Requiring only the extension in
-  blocks and serving the reads on request would make pruned nodes depend on peers that hold the
-  tree's interior nodes, which the mandatory section avoids (Rationale), and sampling makes a
-  light client's check of work probabilistic, with the sample size as a security parameter. The
-  reads cannot be made smaller without reducing what a miner must hold or transfer per read
-  (Rationale). Which nodes carry the reads, and whether a block requires them, is not decided.
+- Who carries the reads. While `N < 2^28` a proof section is at most 40,244 bytes: at most
+  39,680 of reads (8 chunks with their paths) and at most 564 of tree extension (`len`, `N`, `S`
+  and at most 17 `ext` roots). A node holding block `P` and the states kept for `P - 1` and `P`
+  derives the extension of block `P + 1` and read 0's chunk and path; an archival node also
+  reads every other chunk from its own chain; header followers (headers-first synchronization,
+  light clients) hold neither. For a node that recomputes the reads they cannot be made smaller
+  without reducing what a miner must hold or transfer per read (Rationale). Proposed design, not
+  yet in the Specification: the reads travel outside the block, as witness data does for peers
+  that request it (BIP144), and each node receives only what it cannot derive.
+  - Blocks. A block is valid if its work is valid; the proof section is not part of the block,
+    `block` and `cmpctblock` messages are unchanged, and the protocol message size limit stays
+    4,000,000 bytes. A node checks a block's work from its own chain or from a `ddpowreads`
+    message.
+  - `sendddpow`, after the version handshake: `reads` (u8: 1 to receive a `ddpowreads` after
+    every `block` or `cmpctblock` the peer sends or announces, with read 0 omitted), `level`
+    (u8: the lowest tree level the sender stores, 64 for peaks only) and `serves` (u8: 0 for
+    none, 1 for the reads of blocks it holds, 2 for the reads of every block). A peer that sent
+    it receives `hdrproofs` in place of `headers`.
+  - `hdrproofs`: a compact-size count of at most 2,000 entries; per entry a header and, at
+    heights from `A`, its extension (`N`, `S` and the `ext` roots, whose count `S` and `N` fix).
+    An entry is at most 724 bytes, so 2,000 entries are at most 1,448,003 bytes; a message with
+    fewer than 2,000 entries ends the sender's chain, as a `headers` message does.
+  - `ddpowreads`: the block hash (32 bytes), `form` (u8, bit 0: read 0 omitted), `level` (u8),
+    then per included read, in order, its chunk (4,096 bytes) and the `min(h_i, level)` siblings
+    of its path, lowest first, where `h_i` is the height of the peak holding `a_i`. The header,
+    the receiver's state, `form` and `level` fix every length, so the message has one valid
+    encoding. `getddpowreads` (block hash, `form`, `level`) requests one; the answer is a
+    `ddpowreads` or a `notfound` message.
+  - Per node, while `N < 2^28`. An archival node at the tip needs neither reads nor extensions.
+    A pruned validator receives, with read 0 omitted, 34,754 bytes per block when it stores only
+    peaks, 30,050 when it stores tree levels 6 and above (fewer than `N` bytes, 1/4,096 of the
+    chain's size) and 28,706 when it stores every level (fewer than `64 x N` bytes, 1/64 of the
+    chain's size); it maintains those levels from the blocks it receives. It requests reads from
+    peers with `serves` 2 during synchronization and receives them after each new block. A
+    header follower receives at most 724 bytes per header and requests full-form reads (`form`
+    0, `level` 64: 39,714 bytes, at most 48,930) for the most recent headers and for a random
+    sample of earlier ones chosen after the headers arrive: if a fraction `q` of the headers
+    lack valid work, `s` samples find one with probability `1 - (1 - q)^s`, so `s` is a security
+    parameter.
+  - Faults. A `ddpowreads` that fails verification is a fault of the peer that sent it, which
+    the node disconnects; it never marks the block invalid. A block whose `final` misses the
+    target after its reads verify is invalid, as in Fault attribution. A pruned node that no
+    peer serves cannot check a block's work and stops at that block; it never accepts a block
+    whose work it has not checked. The design replaces the mandatory section's guarantee that no
+    valid block lacks one with a dependence on peers with `serves` 2 for availability, not for
+    correctness; pruned nodes already download historical blocks from archival peers.
+  - Not specified: transport compression of chunks, and combining the paths of one message into
+    one multiproof.
 - Concentration: the security model changes from aggregate hash rate to aggregate read
   throughput over held chains; its concentration properties (disk versus DRAM cost per unit
   rate) are not analyzed.
