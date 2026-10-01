@@ -16,8 +16,10 @@
 //!   solution if final has >= `bits` leading zero bits
 //!
 //! Usage:
-//!   ddpow-strong bench [--gib 4] [--reads 8] [--threads N] [--seconds 10]
+//!   ddpow-strong bench [--gib 4] [--reads 8] [--threads N] [--seconds 10] [--lanes 1]
 //!   ddpow-strong bench --disk <file> [--gib 16] [--reads 8] [--threads N] [--seconds 20]
+//!     both: [--read-bytes 64] (bytes per read, hashed whole; a power of two, at most 4096 on
+//!     disk) [--nohash 1] (fold each read instead of hashing it: the memory or disk limit)
 //!   ddpow-strong partial [--gib 1] [--reads 8] [--threads N] [--seconds 3] [--layout random|prefix]
 //!                                                  (partial holder: chained vs independent reads)
 //!   ddpow-strong prove [--kib 256] [--reads 8]     (build an MMR, find a low-target
@@ -156,37 +158,90 @@ fn pure_hash(threads: usize, seconds: u64) -> Rate {
     })
 }
 
-/// Read k chained chunks per attempt from an in-RAM dataset: hash-bound unless RAM bandwidth
-/// binds.
-fn ram_read(window: &[u8], reads: usize, threads: usize, seconds: u64) -> Rate {
-    let n = (window.len() / CHUNK) as u64;
-    let s = parent_start(n);
+/// Parent block bytes: 4 MiB, a full block. Read 0 lands here; it is cached, not read from
+/// storage.
+const PARENT_BYTES: u64 = 4 << 20;
+
+/// One chained step over a read unit: x_i = BLAKE2b-256(x_{i-1} || unit). With `nohash`, a fold
+/// of every word of the unit into x instead: the rate without hashing, so memory alone bounds it.
+fn step(x: &[u8; 32], unit: &[u8], nohash: bool) -> [u8; 32] {
+    if !nohash {
+        return blake2b(&[x, unit]);
+    }
+    let mut acc = [0u64; 8];
+    for (i, w) in unit.chunks_exact(8).enumerate() {
+        acc[i % 8] ^= u64::from_le_bytes(w.try_into().unwrap());
+    }
+    let mut out = *x;
+    let folded = acc.iter().fold(u64::from_le_bytes(x[..8].try_into().unwrap()), |a, &w| mix(a ^ w));
+    out[..8].copy_from_slice(&folded.to_le_bytes());
+    out
+}
+
+/// Prefetches the `size` bytes of unit `a`, one request per 64-byte line.
+fn prefetch(data: &[u8], a: u64, size: usize) {
+    #[cfg(target_arch = "x86_64")]
+    for line in (0..size).step_by(64) {
+        // SAFETY: the address is inside `data`; a prefetch does not fault.
+        unsafe { std::arch::x86_64::_mm_prefetch(data.as_ptr().add(a as usize * size + line) as *const i8, std::arch::x86_64::_MM_HINT_T0) };
+    }
+}
+
+/// Chained attempts over an in-RAM dataset of `size`-byte read units, `lanes` attempts
+/// interleaved per thread: each lane's next unit is prefetched as soon as its position is known,
+/// so up to `lanes` reads per thread are in flight while the other lanes hash. Hash-bound unless
+/// memory binds.
+fn ram_read(data: &[u8], size: usize, reads: usize, lanes: usize, nohash: bool, threads: usize, seconds: u64) -> Rate {
+    let n = (data.len() / size) as u64;
+    let s = n - (PARENT_BYTES / size as u64).min(n - 1);
+    let unit = |a: u64| &data[a as usize * size..(a as usize + 1) * size];
     spawn_loop(threads, seconds, |t, total, stop| {
-        let mut hdr = [0u8; 80];
-        hdr[0] = t as u8;
+        let mut hdr = vec![[0u8; 80]; lanes];
+        for (l, h) in hdr.iter_mut().enumerate() {
+            h[0] = t as u8;
+            h[1] = l as u8;
+        }
+        let mut x = vec![[0u8; 32]; lanes];
+        let mut a = vec![0u64; lanes];
         let mut n_nonce: u64 = 0;
         while !stop.load(Ordering::Relaxed) {
-            for _ in 0..20_000 {
-                hdr[8..16].copy_from_slice(&n_nonce.to_le_bytes());
-                let h0 = blake2b(&[&hdr]);
-                let f = attempt(&h0, reads, n, s, |a| Some(chunk_at(window, a))).unwrap();
-                hdr[40] ^= f[0];
+            for _ in 0..256 {
+                for l in 0..lanes {
+                    hdr[l][8..16].copy_from_slice(&n_nonce.to_le_bytes());
+                    x[l] = blake2b(&[&hdr[l]]);
+                    a[l] = s + idx(&x[l], n - s);
+                    prefetch(data, a[l], size);
+                }
+                for i in 0..reads {
+                    for l in 0..lanes {
+                        x[l] = step(&x[l], unit(a[l]), nohash);
+                        if i + 1 < reads {
+                            a[l] = idx(&x[l], n);
+                            prefetch(data, a[l], size);
+                        }
+                    }
+                }
+                for l in 0..lanes {
+                    hdr[l][40] ^= x[l][0];
+                }
                 n_nonce += 1;
             }
-            total.fetch_add(20_000, Ordering::Relaxed);
+            total.fetch_add(256 * lanes as u64, Ordering::Relaxed);
         }
     })
 }
 
-/// Read k chained chunks per attempt: read 0 from the parent in RAM, reads 1..k-1 from a file
-/// with O_DIRECT (one 4 KiB page per chunk, page cache bypassed): read-bound at the drive's
-/// random-read rate, whatever the hasher's speed.
-fn disk_read(path: &str, gib: f64, reads: usize, threads: usize, seconds: u64) -> Rate {
+/// Chained attempts over `size`-byte read units: read 0 from the parent in RAM, reads 1..k-1
+/// from a file with O_DIRECT (page cache bypassed). Units are packed into 4 KiB pages, so each
+/// storage read is the one page holding the unit (`size` divides 4096): read-bound at the
+/// drive's random-read rate, whatever the hasher's speed.
+fn disk_read(path: &str, gib: f64, size: usize, reads: usize, nohash: bool, threads: usize, seconds: u64) -> Rate {
+    assert!(size <= PAGE && PAGE % size == 0, "--read-bytes must divide 4096");
     let bytes = (gib * (1u64 << 30) as f64) as u64 & !(PAGE as u64 - 1);
     ensure_file(path, bytes, threads);
-    let pages = bytes / PAGE as u64;
-    let s = parent_start(pages);
-    let mut parent = vec![0u8; (pages - s) as usize * CHUNK];
+    let n = bytes / size as u64;
+    let s = n - (PARENT_BYTES / size as u64).min(n - 1);
+    let mut parent = vec![0u8; (n - s) as usize * size];
     fill(&mut parent, threads);
     #[cfg(target_os = "linux")]
     const O_DIRECT: i32 = 0o40000;
@@ -201,21 +256,29 @@ fn disk_read(path: &str, gib: f64, reads: usize, threads: usize, seconds: u64) -
         let mut n_nonce: u64 = 0;
         let mut page = AlignedPage::new();
         while !stop.load(Ordering::Relaxed) {
-            for _ in 0..256 {
+            for _ in 0..64 {
                 hdr[8..16].copy_from_slice(&n_nonce.to_le_bytes());
-                let h0 = blake2b(&[&hdr]);
-                let f = attempt(&h0, reads, pages, s, |a| {
-                    if a >= s {
-                        return Some(chunk_at(parent, a - s));
+                let mut x = blake2b(&[&hdr]);
+                let mut a = s + idx(&x, n - s);
+                for i in 0..reads {
+                    x = if a >= s {
+                        let at = (a - s) as usize * size;
+                        step(&x, &parent[at..at + size], nohash)
+                    } else {
+                        let off = a * size as u64;
+                        let page_off = off & !(PAGE as u64 - 1);
+                        file.read_exact_at(page.as_mut(), page_off).expect("direct read");
+                        let at = (off - page_off) as usize;
+                        step(&x, &page.as_mut()[at..at + size], nohash)
+                    };
+                    if i + 1 < reads {
+                        a = idx(&x, n);
                     }
-                    file.read_exact_at(page.as_mut(), a * PAGE as u64).expect("direct read");
-                    Some(page.as_mut()[..CHUNK].try_into().unwrap())
-                })
-                .unwrap();
-                hdr[40] ^= f[0];
+                }
+                hdr[40] ^= x[0];
                 n_nonce += 1;
             }
-            total.fetch_add(256, Ordering::Relaxed);
+            total.fetch_add(64, Ordering::Relaxed);
         }
     })
 }
@@ -299,27 +362,36 @@ fn bench() {
     let reads = arg("--reads", 8.0) as usize;
     let seconds = arg("--seconds", 10.0) as u64;
     let gib = arg("--gib", 4.0);
+    let size = arg("--read-bytes", CHUNK as f64) as usize;
+    let lanes = arg("--lanes", 1.0) as usize;
+    let nohash = arg("--nohash", 0.0) != 0.0;
+    assert!(size >= 64 && size.is_power_of_two(), "--read-bytes must be a power of two, at least 64");
+    let mode = if nohash { "fold, no hashing" } else { "hashed" };
 
     let pure = pure_hash(threads, 3);
     println!("pure hash (no reads):   {:>12.3e} H/s   {:.1} MH/s  [{threads} threads]", rate(&pure), rate(&pure) / 1e6);
 
     if let Some(path) = arg_str("--disk") {
-        let r = disk_read(&path, gib, reads, threads, seconds);
+        let r = disk_read(&path, gib, size, reads, nohash, threads, seconds);
         let eff = rate(&r);
         println!(
-            "disk read/hash (k={reads}): {:>12.3e} H/s   {:.3e} storage reads/s   [O_DIRECT, {gib} GiB; read 0 from the parent in RAM]",
+            "disk (k={reads}, {size}-byte reads, {mode}): {:>12.3e} attempts/s   {:.3e} storage reads/s   {:.2} GB/s used   [O_DIRECT, {gib} GiB; read 0 from the parent in RAM]",
             eff,
-            eff * (reads - 1) as f64
+            eff * (reads - 1) as f64,
+            eff * (reads - 1) as f64 * size as f64 / 1e9
         );
-        println!("  effective mining rate is read-bound: a hasher {:.0}x faster mines at the same rate.", rate(&pure) / eff);
     } else {
-        let n_chunks = ((gib * (1u64 << 30) as f64) as usize / CHUNK).max(1);
-        let mut window = vec![0u8; n_chunks * CHUNK];
-        fill(&mut window, threads);
-        let r = ram_read(&window, reads, threads, seconds);
+        let units = ((gib * (1u64 << 30) as f64) as usize / size).max(2);
+        let mut data = vec![0u8; units * size];
+        fill(&mut data, threads);
+        let r = ram_read(&data, size, reads, lanes, nohash, threads, seconds);
         let eff = rate(&r);
-        println!("RAM read/hash (k={reads}):  {:>12.3e} H/s   {:.3e} reads/s   [{gib} GiB resident]", eff, eff * reads as f64);
-        println!("  {:.0}% of the pure hash rate: k + 1 hashes and k serial reads per attempt.", 100.0 * eff / rate(&pure));
+        println!(
+            "RAM (k={reads}, {size}-byte reads, {mode}, {lanes} lanes): {:>12.3e} attempts/s   {:.3e} reads/s   {:.2} GB/s   [{gib} GiB resident]",
+            eff,
+            eff * reads as f64,
+            eff * reads as f64 * size as f64 / 1e9
+        );
     }
 }
 
@@ -590,7 +662,7 @@ fn main() {
         Some("prove") => prove(),
         Some("chain") => chain::run(),
         _ => {
-            eprintln!("usage: ddpow-strong bench [--gib G] [--reads k] [--disk FILE] [--threads N] [--seconds S]");
+            eprintln!("usage: ddpow-strong bench [--gib G] [--reads k] [--disk FILE] [--threads N] [--seconds S] [--read-bytes B] [--lanes L] [--nohash 1]");
             eprintln!("       ddpow-strong partial [--gib G] [--reads k] [--threads N] [--seconds S] [--layout random|prefix]");
             eprintln!("       ddpow-strong prove [--kib K] [--reads k] [--bits B]");
             eprintln!("       ddpow-strong chain [--blocks B] [--activation A] [--body-kib K] [--nbits HEX]");

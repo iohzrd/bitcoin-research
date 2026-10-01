@@ -61,7 +61,24 @@ reads `i` and `i + 4` shared a word of `h0`, so their positions differ by one of
 offsets. At `f = 0.5` a prefix holder needed 38 `h0` per completed attempt instead of 128.
 Chained positions each come from a distinct digest; both layouts give the same chained rows.
 
-## Measured (this machine: 24-thread CPU, one NVMe; 2026-09-28; chained rule)
+## Measured (desktop: Ryzen 9 5950X, 32 threads, 62 GiB RAM, Samsung 980 PRO 2 TB; transparent huge pages `always`; rustc 1.96.0; 2026-09-30; chained rule, k = 8)
+
+| regime | dataset | threads | effective attempts/s | reads/s | bound by |
+| --- | --- | --- | --- | --- | --- |
+| pure hash, no reads | - | 32 | 1.20e8 | - | the hasher |
+| RAM-resident chain | 4 GiB, 10 s | 32 | 1.070e7 | 8.56e7 | hashing (9 per attempt; cap 1.33e7) and one read in flight per thread |
+| RAM-resident chain | 24 GiB, 20 s | 32 | 9.815e6 | 7.85e7 | as above; 8% below 4 GiB (page-table walks) |
+| NVMe, O_DIRECT | 64 GiB file | 24 | 5.68e4 | 3.98e5 | the disk, queue depth 24 |
+| NVMe, O_DIRECT | 64 GiB file | 96 | 1.21e5 | 8.49e5 | the disk, queue depth 96 |
+| NVMe, O_DIRECT | 64 GiB file | 192 | 1.43e5 | 9.99e5 | the disk, queue depth 192 |
+| NVMe, O_DIRECT | 64 GiB file | 384 | 1.50e5 | 1.05e6 | the disk (rated about 1e6 random 4 KiB reads/s) |
+
+The RAM rate is 74% of the hashing cap and 65 times the drive's rate at full queue depth. The
+RAM rows are for datasets far below the chain's size; a 1 TB dataset adds more page-table walks.
+
+## Measured (laptop: 24-thread CPU, one NVMe; 2026-09-28; chained rule)
+
+A laptop; its NVMe rates are 4.4 times below the desktop drive's at full queue depth.
 
 | regime | k | threads | effective attempts/s | storage reads/s | bound by |
 | --- | --- | --- | --- | --- | --- |
@@ -77,6 +94,45 @@ one attempt are serial, so queue depth comes only from parallel attempts: k = 8 
 reached a third of the drive's rate, at 96 threads its full rate. Earlier measurements with the
 independent rule (all k reads from disk) gave 4.4e5/s at k = 1 and 1e4 to 7e4/s at k = 8;
 consumer NVMe random-read rate varies with queue depth and drive state.
+
+## Read size (laptop: Ryzen AI 9 HX 370, 24 threads, 30 GiB LPDDR5X, Micron MTFDKBA1T0QFM; 2026-09-30; chained rule, k = 8)
+
+`--read-bytes B` reads `B` bytes per position and hashes all of them into the next digest
+(64 is the rule as specified). On disk the units are packed into 4 KiB pages, so every size
+costs one page read. `--nohash 1` folds each read into the digest with XOR and a 64-bit mix
+instead of hashing it, which gives the memory or disk limit with hashing removed. `--lanes 8`
+interleaves 8 attempts per thread and prefetches each read as soon as its position is known
+(1, 4, 8 and 16 lanes at 64 bytes: 8 lanes is at the plateau). RAM rows: 8 GiB dataset, 8 s;
+cache-resident rows: 4 MiB, 5 s; disk rows: 16 GiB file, O_DIRECT, 192 threads, 15 s.
+
+| read size | RAM, hashed (attempts/s) | RAM, memory limit (attempts/s; GB/s) | hashing limit, cache-resident (attempts/s) | NVMe, hashed (attempts/s) | RAM over NVMe, hashed | RAM over NVMe, memory limit |
+| --- | --- | --- | --- | --- | --- | --- |
+| 64 B | 7.03e6 | 1.83e7; 9.4 | 1.05e7 | 2.18e4 | 322x | 838x |
+| 256 B | 3.19e6 | 1.24e7; 25.5 | 4.26e6 | 2.21e4 | 144x | 562x |
+| 512 B | 2.08e6 | 7.59e6; 31.1 | 2.82e6 | 2.22e4 | 94x | 342x |
+| 1 KiB | 1.30e6 | 5.50e6; 45.1 | 1.58e6 | 2.22e4 | 58x | 248x |
+| 4 KiB | 4.05e5 | 1.84e6; 60.2 | 4.59e5 | 2.23e4 | 18x | 82x |
+
+- **Disk does not depend on read size.** The drive delivered 1.55e5 page reads/s at every size,
+  hashed or folded, at 192, 384 and 768 threads: the drive is the limit. This is below the
+  2.4e5 to 2.8e5/s measured on 2026-09-28 on the same laptop (power profile `balanced`, I/O
+  scheduler `kyber`); the cause was not investigated.
+- **RAM moves from row-open-bound to bandwidth-bound.** With hashing removed, memory served
+  1.46e8 reads/s at 64 bytes and 1.47e7 at 4 KiB (60 GB/s): 10 times fewer reads for 64 times
+  the bytes.
+- **RAM's advantage over disk per copy falls about 10 times at 4 KiB** (838x to 82x at the
+  memory limit; 322x to 18x hashed on this CPU).
+- **Hashing per attempt rises with read size**: 9 BLAKE2b-256 compressions at 64 bytes, 265 at
+  4 KiB (8 steps of 33 compressions over 32 + 4,096 bytes, plus `h0`). The CPU's hashing limit is below its memory
+  limit at every size (1.7 times at 64 bytes, 4 times at 4 KiB), so a RAM miner with faster
+  hashing gains up to that factor, and more at larger sizes.
+- **Proof sections grow with read size**: each read carries its unit, so at 4 KiB the 8 units
+  are 32 KiB, against 512 bytes at 64 bytes, with paths shorter by 6 levels.
+
+The RAM rows use an 8 GiB dataset on one laptop memory system; a chain-sized dataset adds
+page-table walks, and server memory has more channels and more bandwidth. The ratio that
+carries over is the one the table shows: at large read sizes RAM is limited by bandwidth, disk
+by page reads per second.
 
 ## What it shows
 
@@ -162,8 +218,9 @@ and the oversize parent rejected from the anchor.
 ## Usage
 
 ```
-ddpow-strong bench [--gib G] [--reads k] [--threads N] [--seconds S]     # RAM regime
+ddpow-strong bench [--gib G] [--reads k] [--threads N] [--seconds S] [--lanes L]  # RAM regime
 ddpow-strong bench --disk FILE [--gib G] [--reads k] [--threads N] ...   # disk regime
+    both: [--read-bytes B] (bytes per read, hashed whole) [--nohash 1] (fold instead of hash)
 ddpow-strong partial [--gib G] [--reads k] [--layout random|prefix]      # partial holder, both rules
 ddpow-strong prove [--kib K] [--reads k] [--bits B]                      # Merkle mountain range proof roundtrip
 ddpow-strong chain [--blocks B] [--activation A] [--body-kib K] [--nbits HEX] # proof sections, pruned and light followers
