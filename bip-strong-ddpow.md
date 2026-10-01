@@ -40,9 +40,10 @@ attempt, against 264 for its eight steps over chunks (Security).
 
 ## Specification
 
-Chunks. Every block from genesis, in height order, in its network serialization with witness
-data (header, transaction count and transactions), without its proof section, split into
-4,096-byte pieces, the last zero-padded.
+Chunks. Each block from genesis, in its network serialization with witness data (header,
+transaction count and transactions) without its proof section, is split separately into
+4,096-byte pieces, its last piece zero-padded; the chunks of all blocks are taken in height
+order.
 
 Tree. `BLAKE2b-256` is unkeyed BLAKE2b with a 32-byte digest. `T` is a Merkle mountain range
 over the chunks of blocks `0..P` (parent `P`): leaf `= BLAKE2b-256(0x00 || chunk)`, node
@@ -61,13 +62,13 @@ Bitcoin Knots
 [`src/primitives/block.cpp`](https://github.com/bitcoinknots/bitcoin/blob/58398baf33e588779685ead478e6397bb28ed3d6/src/primitives/block.cpp#L13-L105);
 every stage for test headers in
 [`src/test/data/block_header_v2.json`](https://github.com/bitcoinknots/bitcoin/blob/58398baf33e588779685ead478e6397bb28ed3d6/src/test/data/block_header_v2.json)),
-before the XOR mask and byte reversal that produce the block hash: the value a BLAKE2b mining
-chip outputs. `mask` is that XOR mask: the tagged SHA-256 (tag `Bitcoin block hash PoW XOR mask`)
-of the header's `m_xor_key` with its first `m_xor_key_mask_clear_bits` bits cleared (in byte
-order, high bit first), or zero if `m_xor_key` is zero. `mr(d)` is `d XOR mask` with its bytes
-reversed; the block hash is `mr(h0)`.
+before the XOR mask and byte reversal that produce the block hash. `mask` is that XOR mask: the
+tagged SHA-256 (tag `Bitcoin block hash PoW XOR mask`) of the header's `m_xor_key`, with the
+first `m_xor_key_mask_clear_bits` bits of that digest cleared (in byte order, high bit first),
+or zero if `m_xor_key` is zero. `mr(d)` is `d XOR mask` with its bytes reversed; the block hash
+is `mr(h0)`.
 
-    x_0   = h0                                         (the mining chip's output)
+    x_0   = h0                                         (the stage-3 digest)
     a_0   = S + idx(x_0, N - S)                        parent block
     x_i   = BLAKE2b-256( x_{i-1} || chunk(a_{i-1}) )   i = 1..k
     a_i   = idx(x_i, N)                                i = 1..k-1, whole chain
@@ -150,13 +151,14 @@ mutated block.
 Relay. `block` messages carry the proof section after the transactions, and `cmpctblock`
 messages after the prefilled transactions. The protocol message size limit is raised from
 4,000,000 to 4,049,460 bytes, so a block at the 4,000,000-byte serialized size limit fits with
-the largest section. For headers-first synchronization a node sends `sendddpow` (no payload) to
-ask a peer for `hdrproofs` messages in place of `headers`. A `hdrproofs` message is a
-compact-size count and, per entry, a header and its proof section (a zero `len` for headers
-before `A`). It holds at most 81 entries: 81 entries of at most 164 + 49,460 bytes and the
-1-byte count are 4,019,545 bytes, below the message limit at any chain size; a message with
-fewer than 81 entries ends the sender's chain, as a `headers` message with fewer than 2,000
-does.
+the largest section. A node sends `sendddpow` (no payload) to every peer after `verack`. To a
+peer that sent `sendddpow`, a node sends any batch or announcement of headers whose last header
+is at height `A` or above as a `hdrproofs` message in place of `headers`; a batch whose last
+header is below `A` is sent as `headers`. A `hdrproofs` message is a compact-size count and, per
+entry, a header and its proof section (a zero `len` for headers before `A`). It holds at most 81
+entries: 81 entries of at most 164 + 49,460 bytes and the 1-byte count are 4,019,545 bytes,
+below the message limit at any chain size; a message with fewer than 81 entries ends the
+sender's chain, as a `headers` message with fewer than 2,000 does.
 
 Difficulty. `final` is the proof-of-work value. From `A`, `powLimit` is `2^240 - 1` (compact
 `0x1f00ffff`, 65,537 expected attempts per block) in place of `2^224 - 1`; it bounds `nBits`
@@ -168,18 +170,20 @@ during a transition window, then every 2016 blocks (Deployment).
 Read 0 in the parent requires holding the parent block before mining on it. Reads 1 to k-1 over
 the whole chain require holding all of it.
 
-Chunks are 4,096 bytes, one page, so that memory holding the chain has as little advantage over
-disks holding it as the chunk size allows. A storage device reads whole pages, so up to one
-page its reads per second do not depend on the chunk size. Memory transfers a chunk in units
-smaller than a page, so a smaller chunk costs memory fewer bytes per read and raises its reads
-per second relative to a disk's; with 4,096-byte chunks, memory's reads per second per copy are
-at most its bandwidth divided by 4,096 bytes. A copy split across devices, such as accelerator
-memory joined by an interconnect, moves 4,096 bytes across the interconnect for each read held
-on another device. A chunk larger than a page would cost a disk more than one page per read.
-Each step hashes the whole chunk: a step depending on a digest of the chunk would let a miner
-store digests instead of chunks, and a step depending on part of the chunk would let memory
-transfer only that part. The costs are 33 BLAKE2b compression function evaluations per step
-and 4,096 bytes per read in the proof section (Costs, Open questions).
+Chunks are 4,096 bytes, one page (here: the 4,096-byte logical block of a drive formatted with
+4,096-byte sectors, and the memory page of common operating systems), so that memory holding the
+chain has as little advantage over drives holding it as the chunk size allows. A drive reads
+whole logical blocks, so up to one page its reads per second do not depend on the chunk size.
+Memory transfers a chunk in units smaller than a page, so a smaller chunk costs memory fewer
+bytes per read and raises its reads per second relative to a drive's; with 4,096-byte chunks,
+memory's reads per second per copy are at most its bandwidth divided by 4,096 bytes. A copy
+split across devices, such as accelerator memory joined by an interconnect, moves 4,096 bytes
+across the interconnect for each read held on another device. A chunk larger than a page would
+cost a drive more than one logical block per read. Each step hashes the whole chunk: a step
+depending on a digest of the chunk would let a miner store digests instead of chunks, and a step
+depending on part of the chunk would let memory transfer only that part. The costs are 33
+BLAKE2b compression function evaluations per step and 4,096 bytes per read in the proof section
+(Costs, Open questions).
 
 Measurement (informative; no requirement of this specification depends on it). One laptop (AMD
 Ryzen AI 9 HX 370, 24 threads, 30 GiB LPDDR5X, one Micron MTFDKBA1T0QFM NVMe drive), 2026-09-30,
@@ -213,16 +217,15 @@ per second, a rate set by `H`, not by its reads. With chained positions, a miner
 missing chunk at read `i` has already performed the reads before it. Only `a_1` (from `h0` and a
 parent chunk) is known before a storage read, so a fraction-`f` holder spends
 `(1 + f + ... + f^(k-2)) / f^(k-2)` storage reads per completed attempt against `k - 1` for a
-full holder: 1.4x at `f = 0.9`, 18x at `0.5`, 1.7e4x at `0.146`.
+full holder: 1.4x at `f = 0.9`, 18x at `0.5`.
 
 The read count `k` sets two costs against each other. A proof section carries `k` chunks with
 their paths, so its size grows linearly with `k`; the storage reads a holder of a fraction `f`
 of the chain spends per completed attempt, relative to a full holder, grow exponentially with
 `k` (the formula above). `k` does not change the ratio between miners whose rates are bounded by
 their random reads, whatever their storage: each performs `k - 1` storage reads per attempt, so
-`k` divides every such rate alike. In the table, sizes are while `N < 2^28` (52,560 blocks per
-year carry 52,560 times the section), and the `f` columns give that relative read count to two
-decimal places:
+`k` divides every such rate alike. In the table, sizes are while `N < 2^28`, and the `f` columns
+give that relative read count to two decimal places:
 
 | `k` | section (bytes) | % of a full block | `f = 0.9` | `f = 0.75` | `f = 0.5` |
 | --- | --------------- | ----------------- | --------- | ---------- | --------- |
@@ -260,13 +263,14 @@ The proof section cannot be included in the block hash input: committing it in t
 transaction Merkle root changes `h0`, which changes the read positions it proves. It needs no
 hash commitment because it has one valid value for a given header and chain; changing any byte
 fails verification. Requiring it in every block, rather than relaying it separately, means no
-valid block lacks one, so a validator, pruned or archival, never depends on a party that holds
-the tree's interior nodes to build it; a header follower receives each header's section in
-`hdrproofs` from peers that keep sections or can build them. `ext` lets a node without the
-parent block extend the parent's peaks. The section is outside the block's weight and serialized
-size limits, so it takes no transaction capacity: counted in weight at one unit per byte, a
-section of 40,244 bytes (its bound while `N < 2^28`) would take 5.03% of the 800,000 weight
-units allowed until 1 September 2027 and 1.01% of 4,000,000.
+valid block lacks one, so a validator, pruned or archival, receives a new block's section in the
+same `block` or `cmpctblock` message as the block. A node syncing earlier blocks, and a header
+follower receiving `hdrproofs`, depend on peers that store sections or the tree's interior nodes
+(Costs). `ext` lets a node without the parent block extend the parent's peaks. The section is
+outside the block's weight and serialized size limits, so it takes no transaction capacity:
+counted in weight at one unit per byte, a section of 40,244 bytes (its bound while `N < 2^28`)
+would take 5.03% of the 800,000 weight units allowed until 1 September 2027 and 1.01% of
+4,000,000.
 
 A proof alone shows only that its chunks match `mm_rhs`, not that `mm_rhs` commits to the real
 chain. The anchor and the per-block bound `C_max` require every header's tree to extend the
@@ -282,6 +286,14 @@ is hashed in the header hash's `Merge-mining hook` stage
 and not checked before `A`; it carries the commitment and is no longer available for merged
 mining.
 
+Mining. No `h0` is compared with a target, so every `h0` is an attempt that requires the reads.
+BLAKE2b mining devices return only nonces whose stage-3 digest meets a share target, so a device
+supplies attempts at the rate it returns results, not at its hash rate, and a share check on the
+stage-3 digest no longer measures work: a share is checked on `mr(final)`, which requires the
+chain or a proof section. `getblocktemplate` reports the `mm_rhs` value for the template's
+parent. A block submitted with `submitblock` carries its proof section, which is built by a
+party holding the chain and the tree's interior nodes (Costs).
+
 ## Costs
 
 Mining. A miner cannot complete attempts faster than it reads the chain. With the parent cached,
@@ -294,10 +306,10 @@ the header's stages.
 Proof sections. At most 40,244 bytes per block while `N < 2^28`: at 52,560 blocks per year
 (600-second spacing), at most 2,115,224,640 bytes per year. Building paths requires the tree's
 interior nodes: at level 1 and above, `N - popcount(N)` nodes, fewer than `32 x N` bytes (1/128
-of the chain's size), with each path's level-0 sibling recomputed from its chunk. No node needs
-to store sections: a node may discard a block's section once the block is validated, and a node
-holding the blocks and the tree's interior nodes builds any section again on request, so
-sections cost bandwidth, not storage.
+of the chain's size), with each path's level-0 sibling recomputed from its chunk. A node that
+sends blocks or `hdrproofs` to peers stores either the sections or the blocks and the tree's
+interior nodes, from which it builds any section on request. A node that sends neither may
+discard a block's section once the block is validated.
 
 Validation. Pruned nodes validate from the per-block tree state (Verification) and the proof
 section. Light clients download at most 40,244 bytes of proof section with each 164-byte header
@@ -306,8 +318,8 @@ while `N < 2^28`, and keep `N` and the peaks, `8 + 32 x popcount(N)` bytes (at m
 
 ## Deployment
 
-Activation at height `A`, a multiple of 2016 above 961,640, so a retarget period starts at `A`
-and every block from `A` has a version 2 header.
+Activation at height `A`, not yet assigned: a multiple of 2016 above 961,640, so a retarget
+period starts at `A` and every block from `A` has a version 2 header.
 
 - Block `A` MUST have `nBits = 0x1c400000`: 17,179,869,183 expected attempts per block,
   600-second spacing at 2.86e7 attempts per second. It is not computed from earlier blocks.
@@ -317,7 +329,7 @@ and every block from `A` has a version 2 header.
   place of the 2016-block retarget, each over the 144 blocks before it (from the timestamp of
   block `A + 144(j-1) - 1` to that of block `A + 144j - 1`), with a 144 x 600-second expected
   timespan and the factor-4 clamp. Of the blocks before `A`, only the timestamp of block `A - 1`
-  enters a calculation.
+  enters a retarget calculation.
 - The next retarget is at `A + 4032`, over blocks `A + 2016` to `A + 4031`, then every 2016
   blocks as before, with the timespan measured as above.
 
@@ -326,9 +338,9 @@ Without the reset, 600-second spacing at the difficulty of block 974,606 (`nBits
 requires `k - 1 = 7` chunk reads besides the parent: 2.32e17 random chunk reads per second
 across the network. A network with `r` times fewer reads mines at `600 r`-second intervals until
 the next 2016-block retarget, which lowers the difficulty by at most a factor of 4. The reset
-target is one quarter of the existing `powLimit`, which would let retargets lower the difficulty
-by at most a factor of 4, so `powLimit` is raised (Difficulty): the new limit is 262,144 times the
-reset target.
+target is 2^222, and the existing `powLimit`, `2^224 - 1`, is below 4 times it, so retargets
+could lower the difficulty by less than a factor of 4 in total; `powLimit` is raised to
+`2^240 - 1` (Difficulty), below 2^18 times the reset target.
 
 The reset value is set low because the two errors are not symmetric. A network `r` times faster
 than 2.86e7 attempts per second mines blocks at `600 / r`-second intervals, and each 144-block
@@ -358,20 +370,21 @@ holder still performs every read and every step. Fetching chunks costs 4,096 byt
 serial round trip per read, 28,672 bytes per attempt with the parent held. Each fetched chunk is
 read from the holder's disk or memory before it crosses the link, so the fetcher's rate is at
 most the holder's read rate, the rate at which the holder mines with the same copy, and is
-further bounded by the link at 28,672 bytes per attempt. Fetching adds no
-read throughput. The rule requires one copy per unit of read throughput, not one per hashing
-device: a copy with random read rate `R` serves at most `R / (k - 1)` attempts per second
-(Costs). Partial holding: costs storage reads per completed attempt as given in Rationale. A
-partial holder may instead fetch missing chunks from a remote holder, at
-`4,096 x (k - 1) x (1 - f)` bytes and up to `k - 1` serial round trips per attempt; chaining does not prevent this; its cost
-is that bandwidth, compared with the cost of storing the missing part locally. Forged reads:
-every node checks each chunk's path to its own peaks. Fabricated trees: a proof checked against
-peaks the prover supplies, with only `mm_rhs` from the header, passes with fabricated chunks at
-the cost of hash attempts alone, 17,179,869,183 attempts per block at the reset `nBits`. Checked from
-the anchor, a fork of `m` blocks after the anchor holds at most `m x C_max` fabricated chunks,
-and each of reads 1 to `k - 1` falls in chunks the anchor fixes with probability at least
-`1 - m x C_max / N`, so fabricated headers require reads of the anchored chain. `m` counts every
-block after the anchor, so the fabricated share can grow by `C_max` chunks per block.
+further bounded by the link at 28,672 bytes per attempt. Fetching adds no read throughput. The
+rule requires one copy per unit of read throughput, not one per hashing device: a copy with
+random read rate `R` serves at most `R / (k - 1)` attempts per second (Costs). Partial holding:
+a holder of a fraction `f` of the chain spends the storage reads per completed attempt given in
+Rationale. A partial holder may instead fetch missing chunks from a remote holder, at an
+expected `4,096 x (k - 1) x (1 - f)` bytes and up to `k - 1` serial round trips per attempt;
+chaining does not prevent this; its cost is that bandwidth, compared with the cost of storing
+the missing part locally. Forged reads: every node checks each chunk's path to its own peaks.
+Fabricated trees: a proof checked against peaks the prover supplies, with only `mm_rhs` from the
+header, passes with fabricated chunks at the cost of hash attempts alone, 17,179,869,183
+attempts per block at the reset `nBits`. Checked from the anchor, a fork of `m` blocks after the
+anchor holds at most `m x C_max` fabricated chunks, and each of reads 1 to `k - 1` falls in
+chunks the anchor fixes with probability at least `1 - m x C_max / N`, so fabricated headers
+require reads of the anchored chain. `m` counts every block after the anchor, so the fabricated
+share can grow by `C_max` chunks per block.
 
 ## Open questions
 
@@ -380,8 +393,6 @@ block after the anchor, so the fabricated share can grow by `C_max` chunks per b
   alternative pre-activation segment can raise one 2016-block period's difficulty 4x, adding
   3 x 2016 x 1.986e19 = 1.20e23 attempts of work, the work of 6.99e12 blocks at the reset `nBits`.
   How chains that diverge before `A` are compared is not specified.
-- Block announcements: how a node obtains the proof section of a block announced by `headers`
-  or `inv` is not specified.
 - Header followers: each `hdrproofs` entry carries the header's full proof section (Relay), at
   most 40,244 bytes while `N < 2^28` against 164 bytes of header, of which at most 564 are the
   tree extension (`len`, `N`, `S` and at most 17 `ext` roots). How a header follower can check
@@ -392,8 +403,19 @@ block after the anchor, so the fabricated share can grow by `C_max` chunks per b
   the reads against its own chain. A block's validity would not change: its work must be valid
   whether or not its section was sent.
 - Concentration: the security model changes from aggregate hash rate to aggregate read
-  throughput over held chains; its concentration properties (disk versus DRAM cost per unit
+  throughput over held chains; its concentration properties (drive versus memory cost per unit
   rate) are not analyzed.
+- Attack cost: the machines that hold a copy and perform the reads are general-purpose servers,
+  and the number for rent is not bounded by this chain's mining network; hardware built for one
+  proof of work, mostly mining one chain, is for rent only in the share not mining it. An
+  attacker that rents more read throughput than the network for `t` seconds pays rent for `t`
+  seconds; at the price honest miners pay, that is the network's spending over `t` seconds, at
+  most the block rewards over `t` seconds while mining is profitable. It need not buy the
+  network's hardware ([Budish, 2018](https://www.nber.org/papers/w24717)). Honest miners have
+  the same access: no manufacturer controls supply, and during an attack they can rent more, up
+  to the value of the rewards, against an attacker paying up to the value of the reversed
+  transactions. Each rented machine must first be loaded with a copy of the chain. The cost of
+  reversing a transaction with a given number of confirmations under this rule is not analyzed.
 - Test vectors: none yet.
 
 ## Reference implementation
