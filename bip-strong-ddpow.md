@@ -420,17 +420,16 @@ share can grow by `C_max` chunks per block.
 
 ## Reference implementation
 
-A regtest implementation in a fork of Bitcoin Knots implements the rule, the node's miner, the
-proof section in `block`, `cmpctblock` and `submitblock` (stored per block, not in the block
-files), `sendddpow` and `hdrproofs`, header verification from an anchor set by a configuration
-option, pruned validation, and fault attribution. It differs from this specification in:
+A regtest implementation in a fork of Bitcoin Knots (branch `ddpow-strong`, `-ddpowstrong=1`)
+implements the rule, the node's miner, the proof section in `block`, `cmpctblock`,
+`submitblock` and `hdrproofs` in the encoding above, `sendddpow`, header verification from an
+anchor set by a configuration option, pruned validation, fault attribution, the raised message
+size limit, and the Deployment schedule. It differs from this specification in:
 
-- Chunk size: 64 bytes, not 4,096.
-- Section encoding: `N`, `S`, the peaks, `ext`, per read the chunk and path, with compact-size
-  counts and no `len` field.
-- `hdrproofs` limit: 128 entries per message sent and 2,000 accepted, not 81.
-- Message size limit: 4,000,000 bytes, not raised.
-- Difficulty: a fixed regtest target; no Deployment rules and no raised `powLimit`.
+- Difficulty on regtest: a fixed target from `A`, not the Deployment schedule. The schedule is
+  used by its `ddpowtest` network (Testnet4's history, the rule from block 152,110) with a
+  reset of `0x1e00ffff` and a limit of `2^255 - 1`; its mainnet parameters carry this
+  specification's values with `A` unassigned.
 
 Its functional tests check it against an independent Python implementation.
 
