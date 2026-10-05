@@ -1,0 +1,5 @@
+{"date":"2026-10-05","drive":"Micron MTFDKBA1T0QFM (laptop NVMe)","file_gib":16,"checkers":1,"reads_per_round":8,"blocks_per_s":1131.4,"ms_per_block_per_checker":0.884,"seconds_per_52560_blocks":46.5}
+{"date":"2026-10-05","drive":"Micron MTFDKBA1T0QFM (laptop NVMe)","file_gib":16,"checkers":4,"reads_per_round":8,"blocks_per_s":3994.2,"seconds_per_52560_blocks":13.2}
+{"date":"2026-10-05","drive":"Micron MTFDKBA1T0QFM (laptop NVMe)","file_gib":16,"checkers":16,"reads_per_round":8,"blocks_per_s":8033.5,"seconds_per_52560_blocks":6.5}
+{"date":"2026-10-05","drive":"Micron MTFDKBA1T0QFM (laptop NVMe)","file_gib":16,"checkers":64,"reads_per_round":8,"blocks_per_s":8749.3,"seconds_per_52560_blocks":6.0}
+{"date":"2026-10-05","drive":"Micron MTFDKBA1T0QFM (laptop NVMe)","file_gib":16,"checkers":1,"reads_per_round":1,"blocks_per_s":2209.0,"ms_per_block_per_checker":0.453,"seconds_per_52560_blocks":23.8}
