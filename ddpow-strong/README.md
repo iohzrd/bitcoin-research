@@ -125,6 +125,24 @@ At 64 bytes on the same GPU (12 GiB): 3.42e8 attempts/s in GPU memory, limited b
 64-byte access rate (2.47e9 reads/s); 1.42e7 over PCIe, limited by about 116 reads in flight at
 about 1 µs each (1.16e8 reads/s). The desktop CPU at 64 bytes with 8 lanes: 1.280e7 attempts/s.
 
+## BLAKE2b implementation (laptop: Ryzen AI 9 HX 370, 24 threads; 2026-10-01; k = 8, 4 KiB, 8 GiB)
+
+`--hasher` picks the CPU's BLAKE2b: `blake2` (the RustCrypto crate, portable code; the default,
+used by every CPU figure above), `simd` (`blake2b_simd`, AVX2 or SSE4.1 chosen at run time, one
+input at a time) or `many` (`blake2b_simd`, the lanes' inputs hashed four per AVX2 pass). The
+bench checks that all three give the same digests before it runs.
+
+| hasher | attempts/s (8 lanes) | relative to `blake2` |
+| --- | --- | --- |
+| blake2 | 4.51e5 | 1x |
+| simd | 4.64e5 | 1.03x |
+| many | 7.94e5 (7.85e5 to 7.99e5 at 4 to 32 lanes) | 1.76x |
+| read limit (`--nohash 1`) | 1.69e6 | - |
+
+`many` is still limited by hashing. The CPU figures elsewhere in this file used `blake2`, so a
+CPU miner using a multi-input BLAKE2b is about 1.76 times faster than they show (measured on this
+laptop only).
+
 ## Measured on rented NVIDIA hardware (lium.io, 2026-10-01; chained rule, k = 8)
 
 `cuda/` (CUDA; data generated on each GPU, word j of chunk a = splitmix64(a * W + j); every run

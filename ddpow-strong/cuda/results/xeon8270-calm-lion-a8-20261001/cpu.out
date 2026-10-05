@@ -1,0 +1,22 @@
+info: downloading installer
+info: profile set to minimal
+info: default host tuple is x86_64-unknown-linux-gnu
+info: syncing channel updates for stable-x86_64-unknown-linux-gnu
+info: latest update on 2026-10-01 for version 1.99.0 (b940084d7 2026-09-28)
+info: downloading 3 components
+info: default toolchain set to stable-x86_64-unknown-linux-gnu
+pure hash (no reads):        2.705e8 H/s   270.5 MH/s  [52 threads]
+RAM (k=8, 4096-byte reads, hashed, blake2, 8 lanes):      1.006e6 attempts/s   8.045e6 reads/s   32.95 GB/s   [128 GiB resident]
+pure hash (no reads):        3.386e8 H/s   338.6 MH/s  [52 threads]
+RAM (k=8, 4096-byte reads, hashed, many, 8 lanes):      1.986e6 attempts/s   1.589e7 reads/s   65.09 GB/s   [128 GiB resident]
+pure hash (no reads):        3.383e8 H/s   338.3 MH/s  [52 threads]
+RAM (k=8, 4096-byte reads, hashed, avx512, 8 lanes):      2.963e6 attempts/s   2.370e7 reads/s   97.08 GB/s   [128 GiB resident]
+pure hash (no reads):        2.692e8 H/s   269.2 MH/s  [52 threads]
+RAM (k=8, 4096-byte reads, fold, no hashing, 8 lanes):      3.272e6 attempts/s   2.618e7 reads/s   107.22 GB/s   [128 GiB resident]
+pure hash (no reads):        2.680e8 H/s   268.0 MH/s  [52 threads]
+RAM (k=8, 4096-byte reads, hashed, blake2, 8 lanes):      1.133e6 attempts/s   9.063e6 reads/s   37.12 GB/s   [0.015625 GiB resident]
+pure hash (no reads):        3.350e8 H/s   335.0 MH/s  [52 threads]
+RAM (k=8, 4096-byte reads, hashed, many, 8 lanes):      2.615e6 attempts/s   2.092e7 reads/s   85.67 GB/s   [0.015625 GiB resident]
+pure hash (no reads):        3.337e8 H/s   333.7 MH/s  [52 threads]
+RAM (k=8, 4096-byte reads, hashed, avx512, 8 lanes):      4.883e6 attempts/s   3.906e7 reads/s   160.01 GB/s   [0.015625 GiB resident]
+== done

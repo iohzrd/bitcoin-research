@@ -43,12 +43,67 @@ const PAGE: usize = 4096;
 /// from storage.
 const PARENT_CHUNKS: u64 = 65_536;
 
+/** Which BLAKE2b implementation `blake2b` uses: 0 the `blake2` crate (portable code), 1
+ *  `blake2b_simd` (AVX2 or SSE4.1, detected at run time). Set by `--hasher`. */
+static HASHER: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
+
 fn blake2b(parts: &[&[u8]]) -> [u8; 32] {
+    if HASHER.load(Ordering::Relaxed) == 1 {
+        let mut st = blake2b_simd::Params::new().hash_length(32).to_state();
+        for p in parts {
+            st.update(p);
+        }
+        return st.finalize().as_bytes().try_into().unwrap();
+    }
     let mut h = Blake2b::<U32>::new();
     for p in parts {
         h.update(p);
     }
     h.finalize().into()
+}
+
+/** BLAKE2b-256 of each input, several at once (`blake2b_simd::many`: four inputs per AVX2
+ *  instruction stream). */
+fn blake2b_many(inputs: &[Vec<u8>], out: &mut [[u8; 32]]) {
+    let params = blake2b_simd::Params::new().hash_length(32).clone();
+    let mut jobs: Vec<blake2b_simd::many::HashManyJob> = inputs.iter().map(|i| blake2b_simd::many::HashManyJob::new(&params, i)).collect();
+    blake2b_simd::many::hash_many(jobs.iter_mut());
+    for (o, j) in out.iter_mut().zip(jobs.iter()) {
+        o.copy_from_slice(j.to_hash().as_bytes());
+    }
+}
+
+mod b2x8;
+
+/** Panics unless the implementations agree on inputs of the sizes the rule hashes. */
+fn check_hashers() {
+    let saved = HASHER.load(Ordering::Relaxed);
+    for len in [80usize, 96, 128, 129, 288, 1056, 4128, 8224, 32800] {
+        let input: Vec<u8> = (0..len).map(|i| (i as u64).wrapping_mul(0x9E37_79B9_7F4A_7C15).to_le_bytes()[i % 8]).collect();
+        HASHER.store(0, Ordering::Relaxed);
+        let a = blake2b(&[&input]);
+        HASHER.store(1, Ordering::Relaxed);
+        let b = blake2b(&[&input[..32], &input[32..]]);
+        let mut c = [[0u8; 32]; 3];
+        blake2b_many(&[input.clone(), input.clone(), input.clone()], &mut c);
+        assert!(a == b && c.iter().all(|h| *h == a), "BLAKE2b implementations disagree at {len} bytes");
+        if b2x8::available() {
+            // As the rule hashes: a 32-byte prefix and a body, and a body alone; 8 lanes differ.
+            let bodies: Vec<Vec<u8>> = (0..8).map(|l| input.iter().map(|&x| x ^ l as u8).collect()).collect();
+            let prefixes: [[u8; 32]; 8] = std::array::from_fn(|l| std::array::from_fn(|k| (k * 7 + l) as u8));
+            let mut got = [[0u8; 32]; 8];
+            b2x8::hash8(Some(&prefixes), std::array::from_fn(|l| &bodies[l][..]), &mut got);
+            for l in 0..8 {
+                HASHER.store(0, Ordering::Relaxed);
+                assert_eq!(got[l], blake2b(&[&prefixes[l], &bodies[l]]), "AVX-512 BLAKE2b disagrees at {len} bytes, lane {l}");
+            }
+            b2x8::hash8(None, std::array::from_fn(|l| &bodies[l][..]), &mut got);
+            for l in 0..8 {
+                assert_eq!(got[l], blake2b(&[&bodies[l]]), "AVX-512 BLAKE2b disagrees at {len} bytes, lane {l}, no prefix");
+            }
+        }
+    }
+    HASHER.store(saved, Ordering::Relaxed);
 }
 
 /// A read position over `n` chunks from the first 8-byte word of `x`.
@@ -191,7 +246,7 @@ fn prefetch(data: &[u8], a: u64, size: usize) {
 /// interleaved per thread: each lane's next unit is prefetched as soon as its position is known,
 /// so up to `lanes` reads per thread are in flight while the other lanes hash. Hash-bound unless
 /// memory binds.
-fn ram_read(data: &[u8], size: usize, reads: usize, lanes: usize, nohash: bool, threads: usize, seconds: u64) -> Rate {
+fn ram_read(data: &[u8], size: usize, reads: usize, lanes: usize, nohash: bool, many: bool, avx512: bool, threads: usize, seconds: u64) -> Rate {
     let n = (data.len() / size) as u64;
     let s = n - (PARENT_BYTES / size as u64).min(n - 1);
     let unit = |a: u64| &data[a as usize * size..(a as usize + 1) * size];
@@ -204,17 +259,58 @@ fn ram_read(data: &[u8], size: usize, reads: usize, lanes: usize, nohash: bool, 
         let mut x = vec![[0u8; 32]; lanes];
         let mut a = vec![0u64; lanes];
         let mut n_nonce: u64 = 0;
+        let many = many && !nohash;
+        let avx512 = avx512 && !nohash;
+        // With `many`: each lane's x || unit, hashed for all lanes together.
+        let mut bufs: Vec<Vec<u8>> = if many { (0..lanes).map(|_| vec![0u8; 32 + size]).collect() } else { Vec::new() };
+        let mut hdr_bufs: Vec<Vec<u8>> = if many { vec![vec![0u8; 80]; lanes] } else { Vec::new() };
         while !stop.load(Ordering::Relaxed) {
             for _ in 0..256 {
+                if many {
+                    for l in 0..lanes {
+                        hdr[l][8..16].copy_from_slice(&n_nonce.to_le_bytes());
+                        hdr_bufs[l].copy_from_slice(&hdr[l]);
+                    }
+                    blake2b_many(&hdr_bufs, &mut x);
+                }
+                if avx512 {
+                    for l in 0..lanes {
+                        hdr[l][8..16].copy_from_slice(&n_nonce.to_le_bytes());
+                    }
+                    for g in 0..lanes / 8 {
+                        let mut out = [[0u8; 32]; 8];
+                        b2x8::hash8(None, std::array::from_fn(|k| &hdr[8 * g + k][..]), &mut out);
+                        x[8 * g..8 * g + 8].copy_from_slice(&out);
+                    }
+                }
                 for l in 0..lanes {
-                    hdr[l][8..16].copy_from_slice(&n_nonce.to_le_bytes());
-                    x[l] = blake2b(&[&hdr[l]]);
+                    if !many && !avx512 {
+                        hdr[l][8..16].copy_from_slice(&n_nonce.to_le_bytes());
+                        x[l] = blake2b(&[&hdr[l]]);
+                    }
                     a[l] = s + idx(&x[l], n - s);
                     prefetch(data, a[l], size);
                 }
                 for i in 0..reads {
+                    if avx512 {
+                        for g in 0..lanes / 8 {
+                            let prefix: [[u8; 32]; 8] = std::array::from_fn(|k| x[8 * g + k]);
+                            let mut out = [[0u8; 32]; 8];
+                            b2x8::hash8(Some(&prefix), std::array::from_fn(|k| unit(a[8 * g + k])), &mut out);
+                            x[8 * g..8 * g + 8].copy_from_slice(&out);
+                        }
+                    }
+                    if many {
+                        for l in 0..lanes {
+                            bufs[l][..32].copy_from_slice(&x[l]);
+                            bufs[l][32..].copy_from_slice(unit(a[l]));
+                        }
+                        blake2b_many(&bufs, &mut x);
+                    }
                     for l in 0..lanes {
-                        x[l] = step(&x[l], unit(a[l]), nohash);
+                        if !many && !avx512 {
+                            x[l] = step(&x[l], unit(a[l]), nohash);
+                        }
                         if i + 1 < reads {
                             a[l] = idx(&x[l], n);
                             prefetch(data, a[l], size);
@@ -236,7 +332,9 @@ fn ram_read(data: &[u8], size: usize, reads: usize, lanes: usize, nohash: bool, 
 /// storage read is the one page holding the unit (`size` divides 4096): read-bound at the
 /// drive's random-read rate, whatever the hasher's speed.
 fn disk_read(path: &str, gib: f64, size: usize, reads: usize, nohash: bool, threads: usize, seconds: u64) -> Rate {
-    assert!(size <= PAGE && PAGE % size == 0, "--read-bytes must divide 4096");
+    assert!((size <= PAGE && PAGE % size == 0) || size % PAGE == 0, "--read-bytes must divide 4096 or be a multiple of it");
+    // One direct read per chunk: the page holding it, or the chunk's pages for chunks of a page or more.
+    let unit = size.max(PAGE);
     let bytes = (gib * (1u64 << 30) as f64) as u64 & !(PAGE as u64 - 1);
     ensure_file(path, bytes, threads);
     let n = bytes / size as u64;
@@ -254,7 +352,7 @@ fn disk_read(path: &str, gib: f64, size: usize, reads: usize, nohash: bool, thre
         let mut hdr = [0u8; 80];
         hdr[0] = t as u8;
         let mut n_nonce: u64 = 0;
-        let mut page = AlignedPage::new();
+        let mut page = AlignedPage::new(unit);
         while !stop.load(Ordering::Relaxed) {
             for _ in 0..64 {
                 hdr[8..16].copy_from_slice(&n_nonce.to_le_bytes());
@@ -266,7 +364,7 @@ fn disk_read(path: &str, gib: f64, size: usize, reads: usize, nohash: bool, thre
                         step(&x, &parent[at..at + size], nohash)
                     } else {
                         let off = a * size as u64;
-                        let page_off = off & !(PAGE as u64 - 1);
+                        let page_off = off & !(unit as u64 - 1);
                         file.read_exact_at(page.as_mut(), page_off).expect("direct read");
                         let at = (off - page_off) as usize;
                         step(&x, &page.as_mut()[at..at + size], nohash)
@@ -283,21 +381,21 @@ fn disk_read(path: &str, gib: f64, size: usize, reads: usize, nohash: bool, thre
     })
 }
 
-/// A 4 KiB page aligned for O_DIRECT.
-struct AlignedPage(*mut u8);
+/// A buffer of whole pages, page-aligned for O_DIRECT.
+struct AlignedPage(*mut u8, usize);
 impl AlignedPage {
-    fn new() -> Self {
-        let layout = std::alloc::Layout::from_size_align(PAGE, PAGE).unwrap();
-        AlignedPage(unsafe { std::alloc::alloc(layout) })
+    fn new(len: usize) -> Self {
+        let layout = std::alloc::Layout::from_size_align(len, PAGE).unwrap();
+        AlignedPage(unsafe { std::alloc::alloc(layout) }, len)
     }
     fn as_mut(&mut self) -> &mut [u8] {
-        unsafe { std::slice::from_raw_parts_mut(self.0, PAGE) }
+        unsafe { std::slice::from_raw_parts_mut(self.0, self.1) }
     }
 }
 unsafe impl Send for AlignedPage {}
 impl Drop for AlignedPage {
     fn drop(&mut self) {
-        let layout = std::alloc::Layout::from_size_align(PAGE, PAGE).unwrap();
+        let layout = std::alloc::Layout::from_size_align(self.1, PAGE).unwrap();
         unsafe { std::alloc::dealloc(self.0, layout) };
     }
 }
@@ -366,7 +464,15 @@ fn bench() {
     let lanes = arg("--lanes", 1.0) as usize;
     let nohash = arg("--nohash", 0.0) != 0.0;
     assert!(size >= 64 && size.is_power_of_two(), "--read-bytes must be a power of two, at least 64");
-    let mode = if nohash { "fold, no hashing" } else { "hashed" };
+    // --hasher blake2 (the `blake2` crate, default), simd (`blake2b_simd`), or many
+    // (`blake2b_simd`, the lanes' inputs hashed together; RAM only).
+    let hasher = arg_str("--hasher").unwrap_or_else(|| "blake2".into());
+    assert!(["blake2", "simd", "many", "avx512"].contains(&hasher.as_str()), "--hasher must be blake2, simd, many or avx512");
+    assert!(hasher != "avx512" || (b2x8::available() && lanes % 8 == 0), "--hasher avx512 needs AVX-512 and --lanes a multiple of 8");
+    check_hashers();
+    HASHER.store(if hasher == "blake2" { 0 } else { 1 }, Ordering::Relaxed);
+    let many = hasher == "many";
+    let mode = if nohash { "fold, no hashing".to_string() } else { format!("hashed, {hasher}") };
 
     let pure = pure_hash(threads, 3);
     println!("pure hash (no reads):   {:>12.3e} H/s   {:.1} MH/s  [{threads} threads]", rate(&pure), rate(&pure) / 1e6);
@@ -384,7 +490,7 @@ fn bench() {
         let units = ((gib * (1u64 << 30) as f64) as usize / size).max(2);
         let mut data = vec![0u8; units * size];
         fill(&mut data, threads);
-        let r = ram_read(&data, size, reads, lanes, nohash, threads, seconds);
+        let r = ram_read(&data, size, reads, lanes, nohash, many, hasher == "avx512", threads, seconds);
         let eff = rate(&r);
         println!(
             "RAM (k={reads}, {size}-byte reads, {mode}, {lanes} lanes): {:>12.3e} attempts/s   {:.3e} reads/s   {:.2} GB/s   [{gib} GiB resident]",

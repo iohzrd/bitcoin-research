@@ -9,6 +9,7 @@ publish = false
 
 [dependencies]
 blake2 = "0.10"
+blake2b_simd = "1"
 sha2 = "0.10"
 
 [profile.release]
