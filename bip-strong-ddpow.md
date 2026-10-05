@@ -10,15 +10,17 @@
 ## Abstract
 
 This consensus rule requires reads of block chain bytes for every mining hash and hashes those
-bytes into the value checked against the difficulty target. The first read position comes from
-the header hash; each later position comes from a digest over the chunk read before it, and
-positions span the whole chain from the genesis block. Because every hash requires reads, and
-each position of an attempt after the first is known only after the previous read is performed,
-a miner holding only part of the chain spends reads on attempts it cannot complete. Each block
-carries a proof of its reads, so a node verifies it from its own Merkle mountain range peaks
-without chain data; the chain's size is a cost to miners, not to validators. At activation the
-difficulty is reset, the proof-of-work limit is raised, and each retarget's timespan includes
-the interval before its period.
+bytes into the value checked against the difficulty target. The first read position comes from the
+header hash; each later position comes from a digest over the chunk read before it, and positions
+span the whole chain from the genesis block. Before a chunk is hashed it is XORed with seven chunks
+of earlier blocks, whose positions are computed from the hash of the block containing the chunk. A
+miner that can recompute a chunk's bytes without storing them, such as bytes it generated from a
+seed and included in a block, still has to read stored data for that chunk unless it can also
+recompute all seven of those chunks. Because every hash requires reads, and each position of an
+attempt after the first is known only after the previous read is performed, a miner holding only
+part of the chain spends reads on attempts it cannot complete. A node checks a block's work by
+reading its own copy of the chain. At activation the difficulty is reset, the proof-of-work limit
+is raised, and each retarget's timespan includes the interval before its period.
 
 ## Motivation
 
@@ -41,23 +43,22 @@ attempt, against 264 for its eight steps over chunks (Security).
 ## Specification
 
 Chunks. Each block from genesis, in its network serialization with witness data (header,
-transaction count and transactions) without its proof section, is split separately into
-4,096-byte pieces, its last piece zero-padded; the chunks of all blocks are taken in height
-order.
+transaction count and transactions), is split separately into 4,096-byte pieces, its last piece
+zero-padded; the chunks of all blocks are taken in height order. For a block at height `P + 1`
+(parent `P`), the chunk space is the chunks of blocks `0..P` of its chain: `N` is their count and
+`S` the count of blocks `0..P-1`, so the parent's chunks are `[S, N)`; `first_b` is the position
+of block `b`'s first chunk. `chunk(a)` is the chunk at position `a`.
 
-Tree. `BLAKE2b-256` is unkeyed BLAKE2b with a 32-byte digest. `T` is a Merkle mountain range
-over the chunks of blocks `0..P` (parent `P`): leaf `= BLAKE2b-256(0x00 || chunk)`, node
-`= BLAKE2b-256(0x01 || left || right)`. `chunk(a)` is the chunk of leaf `a`. `N` = chunk count
-of `0..P`; `S` = chunk count of `0..P-1`.
+Packing (`m = 7`). `BLAKE2b-256` is unkeyed BLAKE2b with a 32-byte digest. `I_b` is block `b`'s
+block hash as 32 bytes in the order `hashPrevBlock` serializes it. The partners of chunk `u` of
+block `b` (position `first_b + u`) are: none if `first_b = 0`; every position in `[0, first_b)`
+if `first_b <= m`; otherwise `m` distinct positions taken in order from the 8-byte words of
+`BLAKE2b-256(0x03 || I_b || LE32(u) || LE32(t))` for `t = 0, 1, ...`, each word read as `u64le`
+and reduced modulo `first_b`, a position already taken skipped. `packed(a)` is `chunk(a)` XORed
+with `chunk(p)` for each partner `p` of `a`. Packing gives the selection as steps, with examples.
 
-Commitment. The header field `mm_rhs` of a block at height `P + 1 >= A` MUST equal
-`BLAKE2b-256(0x02 || N as u64le || S as u64le || bag(peaks(T)))`. With the peaks `p_0 .. p_m`
-listed highest (leftmost) first, `bag = node(p_0, node(p_1, ... node(p_{m-1}, p_m)))`; a single
-peak bags to itself. `mm_rhs` is inside the header, so the chunk at every position is fixed
-before hashing. Before `A` this rule does not check `mm_rhs`.
-
-Per attempt (header `H`, `k = 8`). `h0` is the output of the last BLAKE2b-256 stage of the
-version 2 header hash (`hash` after the second `blake2b_nokey` call in `CBlockHeader::GetHash`,
+Per attempt (`k = 8`). `h0` is the output of the last BLAKE2b-256 stage of the version 2
+header hash (`hash` after the second `blake2b_nokey` call in `CBlockHeader::GetHash`,
 Bitcoin Knots
 [`src/primitives/block.cpp`](https://github.com/bitcoinknots/bitcoin/blob/58398baf33e588779685ead478e6397bb28ed3d6/src/primitives/block.cpp#L13-L105);
 every stage for test headers in
@@ -68,9 +69,9 @@ first `m_xor_key_mask_clear_bits` bits of that digest cleared (in byte order, hi
 or zero if `m_xor_key` is zero. `mr(d)` is `d XOR mask` with its bytes reversed; the block hash
 is `mr(h0)`.
 
-    x_0   = h0                                         (the stage-3 digest)
+    x_0   = h0                                         (blake2b_2 in the test vectors)
     a_0   = S + idx(x_0, N - S)                        parent block
-    x_i   = BLAKE2b-256( x_{i-1} || chunk(a_{i-1}) )   i = 1..k
+    x_i   = BLAKE2b-256( x_{i-1} || packed(a_{i-1}) )  i = 1..k
     a_i   = idx(x_i, N)                                i = 1..k-1, whole chain
     final = x_k
 
@@ -78,87 +79,13 @@ is `mr(h0)`.
 256-bit number as a block hash is, is `<= target(nBits)`. The block hash remains `mr(h0)` and is
 not compared with the target.
 
-Append. Adding a subtree root of height `b` to a list of peaks: push it; while the last two
-peaks have equal height, replace them with `node(left, right)` one level higher. Appending a
-leaf is appending a root of height 0.
-
-Aligned cover. The aligned cover of leaves `[S, N)` is the list of subtrees taken left to right
-from `p = S`: at each `p`, the subtree of the largest height `b` with `p mod 2^b = 0` and
-`p + 2^b <= N`.
-
-Block proof. A block at height `P + 1 >= A` MUST carry a proof section after its transactions.
-The block hash is not computed over it. Every field is determined by the header and the chain,
-so the section has one valid encoding:
-
-    len     u32le            byte length of the fields below
-    N, S    u64le each
-    ext     32 bytes each    roots of the aligned cover of [S, N) (the parent's chunks)
-    per read i = 0..k-1:
-      chunk(a_i)             4,096 bytes
-      path_i                 32 bytes per level, siblings from leaf a_i to its peak, lowest first
-
-The count of `ext` is fixed by `S` and `N`; the length of `path_i` is the height of the peak
-holding `a_i`. For a parent of at most `C_max` chunks (below), `ext` holds at most 17 roots.
-A peak's height is below 64, so a section is at most 49,460 bytes (17 `ext` roots, 8 paths of
-63 levels); while `N < 2^28` (a chain below 1 TiB), at most 40,244 bytes (paths of 27 levels).
-The section is not part of the block's weight or of its serialized size under the
-4,000,000-byte limit. A block whose proof section is absent or fails verification is invalid in
-that form (Fault attribution).
-
-Verification. A node keeps, for each validated block `P` from `A - 1` on, the state of the tree
-over blocks `0..P`: `N`, `peaks(T)` (one per set bit of `N`), and the `c` aligned cover roots of
-block `P`'s chunks, `8 + 32 x (popcount(N) + c)` bytes, at most 1,448 while `N < 2^28`. It
-computes a block's state from its parent's state by appending the block's chunks as leaves, and
-the state for `A - 1` while connecting blocks from genesis, or from the anchor (Header
-verification) and block `A - 1`. The state at an earlier height cannot be computed from the
-state at a later one, so the node keeps it per block to validate blocks on other branches and to
-reorganize. To check block `P + 1` against the state kept for `P`, it requires `mm_rhs` equal to
-the commitment of that state, and `S`, `N` and `ext` equal to its counts and roots; recomputes
-`h0`; then for `i = 0..k-1` computes `a_i`, checks that `chunk(a_i)` hashed with the siblings in
-`path_i` equals the peak holding `a_i` (at level `j` the sibling is the left input if bit `j` of
-`a_i` is 1), and computes `x_{i+1}` from the proof's chunk; and compares `final` with the target.
-No chain data is read: archival and pruned nodes verify the same way.
-
-Header verification without the chain. For headers-first synchronization and light clients. The
-node starts from an anchor: the count `N'` and peaks of the tree over blocks `0..A-2`, which
-header `A - 1` would commit to (8 bytes and 32 bytes per peak), computed from those blocks or
-distributed with the software. A node that receives blocks `0..A-2` detects a wrong anchor; a
-node that receives only headers does not. Holding the count `N'` and peaks of the tree over
-blocks `0..P-1` for header `P`, starting with the anchor for header `A - 1`, it checks header
-`P + 1` with that block's proof section:
-
-1. `S = N'` and `0 < N - S <= C_max`, where `C_max = 977` chunks (a 4,000,000-byte block,
-   4,000,000 / 4,096 rounded up).
-2. Appending the `ext` roots to the held peaks gives `peaks(T)`.
-3. `mm_rhs` equals the commitment of `N`, `S`, `peaks(T)`.
-4. The reads verify against `peaks(T)` as in Verification and `final` meets the target.
-
-It then holds `N` and `peaks(T)`, the tree over blocks `0..P`, for header `P + 1`, per header as
-in Verification. Headers before `A` are checked by their block hash as before.
-
-Fault attribution. Of the checks in this specification, a failure is a fault of the header, and
-the node records the block hash as invalid, only if no proof section can make the header valid:
-`nBits` differs from the required value; `mm_rhs` differs from the commitment of the state held
-for the parent; or `final` misses the target after the reads verify against held peaks, or
-against peaks derived in steps 1 and 2 with step 3 passing. Every other failure is a fault of
-the section: the section is absent or malformed; `S`, `N` or `ext` differ from the node's
-values; step 1 or 3 fails, since a wrong `ext` or `N` produces a commitment mismatch there; a
-chunk hashed with its path does not equal its peak. The node rejects that copy without recording
-the block hash. A node relays a block or header only after its proof section verifies, so a
-failing section is a fault of the peer that sent it: the node disconnects that peer, as for a
-mutated block.
-
-Relay. `block` messages carry the proof section after the transactions, and `cmpctblock`
-messages after the prefilled transactions. The protocol message size limit is raised from
-4,000,000 to 4,049,460 bytes, so a block at the 4,000,000-byte serialized size limit fits with
-the largest section. A node sends `sendddpow` (no payload) to every peer after `verack`. To a
-peer that sent `sendddpow`, a node sends any batch or announcement of headers whose last header
-is at height `A` or above as a `hdrproofs` message in place of `headers`; a batch whose last
-header is below `A` is sent as `headers`. A `hdrproofs` message is a compact-size count and, per
-entry, a header and its proof section (a zero `len` for headers before `A`). It holds at most 81
-entries: 81 entries of at most 164 + 49,460 bytes and the 1-byte count are 4,019,545 bytes,
-below the message limit at any chain size; a message with fewer than 81 entries ends the
-sender's chain, as a `headers` message with fewer than 2,000 does.
+Validation. A node checks a block's work from its own copy of blocks `0..P` of the block's
+chain: each of the `k` reads takes a raw chunk and its partners, at most `k x (m + 1) = 64` raw
+chunk reads, or one read each from a stored copy of the packed chunks. A block whose `mr(final)`
+exceeds `target(nBits)` is invalid. A node MUST NOT connect a block before checking its work. A
+node that does not hold every ancestor's data, or cannot read a chunk from its copy, has not
+checked the work: it records no block as invalid for that reason and checks the work once it
+holds the data. Blocks, compact blocks and headers are relayed as before.
 
 Difficulty. `final` is the proof-of-work value. From `A`, `powLimit` is `2^240 - 1` (compact
 `0x1f00ffff`, 65,537 expected attempts per block) in place of `2^224 - 1`; it bounds `nBits`
@@ -181,9 +108,8 @@ split across devices, such as accelerator memory joined by an interconnect, move
 across the interconnect for each read held on another device. A chunk larger than a page would
 cost a drive more than one logical block per read. Each step hashes the whole chunk: a step
 depending on a digest of the chunk would let a miner store digests instead of chunks, and a step
-depending on part of the chunk would let memory transfer only that part. The costs are 33
-BLAKE2b compression function evaluations per step and 4,096 bytes per read in the proof section
-(Costs, Open questions).
+depending on part of the chunk would let memory transfer only that part. The cost is 33
+BLAKE2b compression function evaluations per step (Costs).
 
 Measurement (informative; no requirement of this specification depends on it). One laptop (AMD
 Ryzen AI 9 HX 370, 24 threads, 30 GiB LPDDR5X, one Micron MTFDKBA1T0QFM NVMe drive), 2026-09-30,
@@ -192,18 +118,15 @@ README). RAM: an 8 GiB dataset, 8 interleaved attempts per thread. NVMe: a 16 Gi
 O_DIRECT, 192 threads; read 0 from the parent in RAM. In the RAM runs each read is folded into
 the digest with XOR and a 64-bit mix instead of hashed, so memory, not this processor's hashing,
 sets the rate. In the NVMe runs each read is hashed whole; folding instead gave the same rate at
-4 KiB (2.24e4 attempts/s), so the drive sets it. The proof section column is not measured: it is
-the largest section the Block proof encoding allows at that chunk size while the chain is below
-1 TiB (`C_max` of 62,500, 15,625, 7,813, 3,907 and 977 chunks; at most 29, 25, 23, 21 and 17
-`ext` roots; paths of at most 33, 31, 30, 29 and 27 levels).
+4 KiB (2.24e4 attempts/s), so the drive sets it.
 
-| read size | RAM (attempts/s) | NVMe (attempts/s) | RAM over NVMe | proof section, at most (bytes) |
-| --------- | ---------------- | ----------------- | ------------- | ------------------------------ |
-| 64 B      | 1.83e7           | 2.18e4            | 838x          | 9,908                          |
-| 256 B     | 1.24e7           | 2.21e4            | 562x          | 10,804                         |
-| 512 B     | 7.59e6           | 2.22e4            | 342x          | 12,532                         |
-| 1 KiB     | 5.50e6           | 2.22e4            | 248x          | 16,308                         |
-| 4 KiB     | 1.84e6           | 2.23e4            | 82x           | 40,244                         |
+| read size | RAM (attempts/s) | NVMe (attempts/s) | RAM over NVMe |
+| --------- | ---------------- | ----------------- | ------------- |
+| 64 B      | 1.83e7           | 2.18e4            | 838x          |
+| 256 B     | 1.24e7           | 2.21e4            | 562x          |
+| 512 B     | 7.59e6           | 2.22e4            | 342x          |
+| 1 KiB     | 5.50e6           | 2.22e4            | 248x          |
+| 4 KiB     | 1.84e6           | 2.23e4            | 82x           |
 
 The drive's rate did not change with read size; the memory rate fell with it, from 1.46e8 reads
 per second at 64 bytes to 1.47e7 at 4 KiB (60 GB/s). At 4 KiB, RAM's advantage over the drive
@@ -219,62 +142,310 @@ parent chunk) is known before a storage read, so a fraction-`f` holder spends
 `(1 + f + ... + f^(k-2)) / f^(k-2)` storage reads per completed attempt against `k - 1` for a
 full holder: 1.4x at `f = 0.9`, 18x at `0.5`.
 
-The read count `k` sets two costs against each other. A proof section carries `k` chunks with
-their paths, so its size grows linearly with `k`; the storage reads a holder of a fraction `f`
-of the chain spends per completed attempt, relative to a full holder, grow exponentially with
-`k` (the formula above). `k` does not change the ratio between miners whose rates are bounded by
-their random reads, whatever their storage: each performs `k - 1` storage reads per attempt, so
-`k` divides every such rate alike. In the table, sizes are while `N < 2^28`, and the `f` columns
-give that relative read count to two decimal places:
+The read count `k` sets two costs against each other. A node without a packed copy reads
+`k x (m + 1)` raw chunks to check a header, so its cost grows linearly with `k`; the storage
+reads a holder of a fraction `f` of the chain spends per completed attempt, relative to a full
+holder, grow exponentially with `k` (the formula above). `k` does not change the ratio between
+miners whose rates are bounded by their random reads, whatever their storage: each performs
+`k - 1` storage reads per attempt, so `k` divides every such rate alike. In the table, the `f`
+columns give that relative read count to two decimal places:
 
-| `k` | section (bytes) | % of a full block | `f = 0.9` | `f = 0.75` | `f = 0.5` |
-| --- | --------------- | ----------------- | --------- | ---------- | --------- |
-| 4   | 20,404          | 0.51%             | 1.12x     | 1.37x      | 2.33x     |
-| 6   | 30,324          | 0.76%             | 1.25x     | 1.93x      | 6.20x     |
-| 8   | 40,244          | 1.01%             | 1.40x     | 2.78x      | 18.14x    |
-| 12  | 60,084          | 1.50%             | 1.79x     | 6.18x      | 186.09x   |
-| 16  | 79,924          | 2.00%             | 2.31x     | 14.77x     | 2,184.47x |
+| `k` | raw reads per header, `k x (m + 1)` | `f = 0.9` | `f = 0.75` | `f = 0.5` |
+| --- | ----------------------------------- | --------- | ---------- | --------- |
+| 4   | 32                                  | 1.12x     | 1.37x      | 2.33x     |
+| 6   | 48                                  | 1.25x     | 1.93x      | 6.20x     |
+| 8   | 64                                  | 1.40x     | 2.78x      | 18.14x    |
+| 12  | 96                                  | 1.79x     | 6.18x      | 186.09x   |
+| 16  | 128                                 | 2.31x     | 14.77x     | 2,184.47x |
 
-With `k = 8` the section is at most 1.01% of a full block while a holder of half the chain
-spends 18.14 times a full holder's storage reads per completed attempt.
+With `k = 8` a node without a packed copy reads at most 64 raw chunks per header while a holder
+of half the chain spends 18.14 times a full holder's storage reads per completed attempt.
 
 Each position comes from a distinct digest. A digest has four 8-byte words, so positions taken
 from one digest reuse words when `k - 1` exceeds 4; two positions from the same word differ by
 an offset fixed in advance, whether both are held depends on which part of the chain is held,
 and a holder can choose that part to complete more than `f^(k-1)` of attempts.
 
-No value varies after `h0`: `final` is a function of `h0` and the chunks `mm_rhs` commits to, so
-each attempt is one header, and a miner varies header fields (nonces, extranonce, time,
-transactions) to make another. A nonce entering after `h0` would give new `final` values from
+No value varies after `h0`: `final` is a function of `h0` and the chain's chunks, so each attempt
+is one header, and a miner varies header fields (nonces, extranonce, time, transactions) to make
+another. A nonce entering after `h0` would give new `final` values from
 the same chunks without new reads.
 
-The commitment fixes the contents of every chunk position before `h0` exists, so a miner cannot
-search over chunk contents for a low `final`.
+The header commits to its parent's block hash, and each block hash commits that block's data
+and its own parent's hash, so the contents of every chunk position are fixed before `h0` exists:
+a miner cannot search over chunk contents for a low `final`.
 
-Proof sections are not necessary to check a block's work: a node holding blocks `0..P` can read
-the chunks of block `P + 1`'s attempt from its own copy and recompute `final`. Without proof
-sections, however, every validating node would have to keep every block from genesis, since
-reads 1 to `k - 1` fall anywhere in the chain, so pruned nodes could not validate; a node could
-not check a header's work before downloading every block before it, which removes the work check
-that bounds the headers a peer can make a synchronizing node store; and light clients could not
-check work at all.
+A proof section could carry each read's chunk with a path to a tree the header commits to, so
+that a node without the chain could check work. With packing, each read needs its chunk and its
+`m` partners: with raw chunks as leaves, a section of `k x (m + 1)` chunks with their paths, at
+most 318,004 bytes while `N < 2^28`; with packed chunks as leaves, every node must read raw
+partners from the whole chain to extend its tree, which a pruned node cannot. This rule has no
+proof sections: a node checks work from its own copy of the chain, and a node without one cannot
+check work from `A`.
 
-The proof section cannot be included in the block hash input: committing it in the header or the
-transaction Merkle root changes `h0`, which changes the read positions it proves. It needs no
-hash commitment because it has one valid value for a given header and chain; changing any byte
-fails verification. Requiring it in every block, rather than relaying it separately, means no
-valid block lacks one, so a validator, pruned or archival, receives a new block's section in the
-same `block` or `cmpctblock` message as the block. A node syncing earlier blocks, and a header
-follower receiving `hdrproofs`, depend on peers that store sections or the tree's interior nodes
-(Costs). `ext` lets a node without the parent block extend the parent's peaks. The section is
-outside the block's weight and serialized size limits, so it takes no transaction capacity:
-counted in weight at one unit per byte, a section of 40,244 bytes (its bound while `N < 2^28`)
-would take 5.03% of the 800,000 weight units allowed until 1 September 2027 and 1.01% of
-4,000,000.
+## Packing
 
-A proof alone shows only that its chunks match `mm_rhs`, not that `mm_rhs` commits to the real
-chain. The anchor and the per-block bound `C_max` require every header's tree to extend the
-anchored tree: a fork can fabricate at most `C_max` chunks per block it adds.
+Packing (Specification) XORs each chunk with `m = 7` raw chunks of older blocks before the walk
+hashes it. This section gives what it prevents, how partners are selected, the bound it gives,
+the choice of `m`, and the alternatives not taken.
+
+### Regenerable data
+
+A chunk is regenerable by a party if the party can compute it without a storage read. A party
+that writes block data, a miner filling its own blocks or anyone paying fees for block space, can
+write bytes it regenerates from a short secret: every field of a transaction it builds (outpoints
+of its own coins, amounts, keys, deterministic signatures, pushed data) is a function of that
+secret. Without the secret these bytes cannot be distinguished from random bytes, so no validity
+rule can exclude them. Without packing, a read at a chunk wholly inside such data is computed
+instead of performed: a party that can regenerate a fraction `q` of the chunk positions skips that
+fraction of its storage reads and completes up to `1 / (1 - q)` times the attempts per second of
+a miner with the same read rate, and `q` grows with every block it fills.
+
+Packing makes the hashed value of each chunk depend on `m` other chunks that the writer neither
+chose nor knew when writing. A packed chunk can be computed without a storage read only if the
+chunk and all `m` partners are regenerable.
+
+### Selection
+
+The partners of chunk `u` of block `b` depend only on `I_b`, `u` and `first_b`, the number of
+chunks in blocks `0..b-1`:
+
+1. If `first_b = 0` (the genesis block) there are none. If `first_b <= m`, they are every
+   position in `[0, first_b)`.
+2. Otherwise, for `t = 0, 1, ...`, compute `e_t = BLAKE2b-256(0x03 || I_b || LE32(u) || LE32(t))`,
+   a hash of 41 bytes.
+3. Read the four 8-byte words of `e_t` in order, each as `u64le`, and reduce each modulo
+   `first_b`. Take the result unless it is already taken.
+4. Stop when `m` positions are taken.
+
+`packed(first_b + u)` is `chunk(first_b + u)` XORed with the `m` partner chunks. In the following
+example `I_b` is the 32 bytes
+`c7e5c1fa198b8a71094338b52531e5f906ac715adfd26302dba30c3818f0742b` (`BLAKE2b-256` of the six
+bytes `696406000000`, not a block hash of any chain), `u = 1`, `first_b = 13` and `m = 7`. Each
+cell is a word of `e_t` reduced modulo 13:
+
+| `t` | word 0 | word 1     | word 2      | word 3      |
+| --- | ------ | ---------- | ----------- | ----------- |
+| 0   | 11     | 7          | 11, skipped | 0           |
+| 1   | 5      | 5, skipped | 10          | 10, skipped |
+| 2   | 3      | 12         |             |             |
+
+The partners are 11, 7, 0, 5, 10, 3 and 12. With the same `I_b`, `u = 0` and
+`first_b = 1,000,000`, they are 605,580, 489,461, 862,574, 23,234, 605,162, 652,525 and 310,112,
+from `t = 0` and `t = 1` with no repeat. The reference implementation's unit tests contain both
+(the second as the first seven positions of an `m = 8` case).
+
+### Properties
+
+- Older partners. Every partner exists when block `b` arrives, so a block is packed once, on
+  arrival, and its packed chunks never change. A reorganization changes only the packed chunks
+  of the new branch's blocks.
+- Selected by `I_b`. The block hash commits the block's data, so the partners are unknown while
+  the data is written, to the block's miner and to anyone buying space in it. A writer therefore
+  cannot write `G` XORed with its chunk's partners to make the packed chunk a regenerable `G`.
+  The miner of block `b` can compute the partners for each solved header and discard headers
+  with unfavourable ones; that selects among headers but cannot change data already committed.
+- Per chunk. `u` is hashed, so the chunks of one block have independent partners.
+- Raw partners. A packed chunk is a function of `m + 1` raw chunks, so a node holding only the
+  blocks forms it with `m + 1` reads, which can be issued together. With packed partners,
+  forming one packed chunk from the blocks would require the partners' partners, recursively, to
+  the genesis block.
+- Distinct partners. Two equal partners cancel in the XOR.
+- Reduction. A uniform 64-bit word reduced modulo `first_b` gives each position with a
+  probability that differs from `1 / first_b` by less than `2^-64`.
+- Mining reads. A miner reads one packed chunk per step from its packed copy, so packing does not
+  change the reads per attempt; it adds `m` raw reads per chunk once, when the block arrives.
+
+### Bound
+
+Model the partner hash and the walk's digests as random functions, and let a party be able to
+regenerate at most a fraction `s` of the chunks of every prefix `[0, n)` of the chain. The `m`
+partners of a chunk of block `b` are distinct positions in `[0, first_b)`, of which at most
+`s x first_b` are regenerable, so all `m` are regenerable with probability
+`prod(i = 0..m-1) (s x first_b - i) / (first_b - i) <= s^m`. Reads 1 to `k - 1` are at positions
+uniform over `[0, N)`, of which at most a fraction `s` are regenerable; read 0 is in the parent,
+which a miner caches (Costs). The expected fraction of reads 1 to `k - 1` that the party computes
+instead of performing is therefore at most `s^(m+1)`, and its attempts per second at a given read
+rate are at most `1 / (1 - s^(m+1))` times an honest miner's: at `s = 1/2` and `m = 7`, at most
+`1/256` of reads and `256/255` times. The bound assumes every partner read costs a storage read;
+a party holding older chunks in a faster tier can exceed it (Open questions: Cached partners).
+
+### Partner count
+
+`m` does not change the reads per attempt of a miner with a packed copy. It sets the raw reads
+per header of a node without one, `k x (m + 1)`; the raw reads to pack a 4,000,000-byte block of
+977 chunks, `977 x m`; and the bound `s^(m+1)`:
+
+| `m` | raw reads per header | packing reads per block | `s^(m+1)`, `s = 1/2` | `s = 1/4` |
+| --- | -------------------- | ----------------------- | -------------------- | --------- |
+| 0   | 8                    | 0                       | 1/2                  | 1/4       |
+| 1   | 16                   | 977                     | 1/4                  | 1/16      |
+| 2   | 24                   | 1,954                   | 1/8                  | 1/64      |
+| 3   | 32                   | 2,931                   | 1/16                 | 1/256     |
+| 4   | 40                   | 3,908                   | 1/32                 | 1/1,024   |
+| 5   | 48                   | 4,885                   | 1/64                 | 1/4,096   |
+| 6   | 56                   | 5,862                   | 1/128                | 1/16,384  |
+| 7   | 64                   | 6,839                   | 1/256                | 1/65,536  |
+| 8   | 72                   | 7,816                   | 1/512                | 1/262,144 |
+
+`m = 7` bounds the computed fraction at `1/256` for a party that regenerates half of every
+prefix, at 64 raw reads per header for a node without a packed copy.
+
+### Alternatives not taken
+
+- A validity rule excluding regenerable data: without the secret the data cannot be
+  distinguished from random bytes.
+- Larger chunks: a party filling whole blocks covers whole chunks at any size up to a block, and
+  above a page a read costs in proportion to its bytes, so a chunk partly inside regenerable data
+  costs the party only its other bytes.
+- Partners in the next block: a miner with a fraction `h` of blocks mines both blocks of a
+  fraction `h^2` of consecutive pairs, and can then regenerate both.
+- Partners selected by a later block's hash: this removes the containing block's miner's choice
+  among solved headers, but a block could be packed only once the next block exists, so read 0,
+  in the parent, would read raw chunks.
+- A fixed partner pool, or partners from a recent window: a party can hold the pool or window in
+  a faster tier, so partner reads cost it that tier's read cost.
+- Iterated or slow hashing. Hashing a chunk `N` times and hashing the digest in the walk would
+  let a miner store digests instead of chunks (Rationale). XORing a chunk with a 4,096-byte
+  keystream that costs `N` hash evaluations replaces the missing data with computation: `N`
+  evaluations on the fastest hardware for that hash must cost more than one storage read, a
+  value that depends on hardware prices; a node without an encoded copy computes `k x N`
+  evaluations per header on general-purpose processors; and an `N` taken per chunk from other
+  data lets the party compute only the chunks with small `N`. Encoding per mining address with
+  an expensive function, as in Arweave 2.6, has the same costs. Partners require data the party
+  does not hold, which no hardware computes.
+
+### Option: group encoding
+
+Group encoding, not specified, would replace packing so that a miner keeps one copy of the
+chain. Branch `ddpow-groups` of the reference implementation implements it.
+
+- Windows: window `j` is blocks `jW` to `(j+1)W - 1`. Its `C_j` chunks, with window indices
+  `c = 0..C_j - 1`, are ordered by `u64le` of the first 8 bytes of
+  `BLAKE2b-256(0x04 || K_j || LE32(c))`, ties by `c`, where `K_j` is the block hash of block
+  `(j+1)W - 1` as 32 bytes in the order `hashPrevBlock` serializes it. Consecutive runs of `g`
+  chunks in that order are groups, `g` even; if the last run has an odd size, its last chunk is
+  a group of one. The reference implementation uses `W = 144` and `g = 8` by default.
+- Encoding: `E(a)` is the XOR of the raw chunks of `a`'s group other than `a`; for a group of
+  one, `E(a) = chunk(a)`.
+- Walk: read 0 hashes `chunk(a_0)` in the parent; reads 1 to `k - 1` hash `E(a_i)` at
+  `a_i = idx(x_i, G)`, where `G` is the chunk count of the complete windows among blocks
+  `0..P`, which requires `A >= W`. Blocks after the last complete window are read only as the
+  parent.
+
+Properties:
+
+- One copy. With `T` the XOR of a group's raw chunks, `E(a) = T XOR chunk(a)`, so for even `g`
+  the XOR of the other members' encodings is `chunk(a)`: `T` appears `g - 1` times, an odd
+  number. A miner keeps only the encoded chunks and recovers a raw chunk with `g - 1` reads; it
+  encodes a complete window reading each raw chunk once. A node keeping raw blocks forms
+  `E(a)` with `g - 1` reads, at most `1 + (k - 1) x (g - 1)` raw reads per header: 50 at
+  `g = 8`, 106 at `g = 16`.
+- Bound. With the ordering hash modeled as a random function, the other members of a chunk in a
+  group of `g` are a uniform `(g - 1)`-subset of the window's other chunks. If a fraction `w` of
+  a window's `C` chunks are regenerable by one party, all `g - 1` are regenerable with
+  probability at most `(w x C / (C - 1))^(g - 1)`. `w` is the party's share of that window:
+  unlike `s` under packing, it is not diluted by older data.
+- Locality. A group's encodings depend only on its members. A party holding the raw chunks of a
+  group's `u` non-regenerable members in a faster tier forms every encoding of that group from
+  the tier and regenerable data, at most `u` fast reads each: `u` slots for up to `g` positions,
+  where an honest miner holds one encoded chunk per position. Under packing a chunk's partners
+  are spread over the older chain, so holding part of it forms few packed chunks, except through
+  the oldest chunks (Open questions: Cached partners).
+- `g = 2` gives no protection: `E(a)` is the other member's raw chunk.
+- Each window has at most one group of fewer than `g` chunks and at most one group of one. A
+  branch that replaces a window's last block changes that window's groups. The miner of that
+  block can discard solved headers to choose among partitions, as with packing.
+
+### Option: two-layer packing
+
+Two-layer packing, not specified, would replace packing so that a miner keeps one copy, with
+partners spread over the older chain as in packing. Branch `ddpow-twolayer` of the reference
+implementation implements it.
+
+- Layers: chunk `u` of block `b` is in layer `L = BLAKE2b-256(0x06 || I_b || LE32(u))[0] mod 2`.
+- Encoding: a layer-0 chunk's encoding is `chunk(a)` XORed with the raw chunks of `m0` distinct
+  layer-1 chunks of older blocks; a layer-1 chunk's encoding is `chunk(a)` XORed with the
+  encodings of `m1` distinct layer-0 chunks of older blocks. Partners are selected as in packing
+  (prefix bytes `0x07` and `0x08`) over the older chunks of the other layer.
+- Walk: as in the Specification, with the encoding in place of `packed`.
+
+Properties:
+
+- One copy. A layer-1 raw chunk is its encoding XORed with its partners' encodings, `m1 + 1`
+  reads; a layer-0 raw chunk is its encoding XORed with its partners' raw chunks, at most
+  `1 + m0 x (1 + m1)` reads. A miner keeps only the encodings.
+- Nodes keep raw blocks: a layer-0 encoding takes `m0 + 1` raw reads, a layer-1 encoding at most
+  `1 + m1 x (1 + m0)`, so a header takes at most `k x (1 + m1 x (1 + m0))`: 456 at
+  `m0 = m1 = 7`, 1,928 at `m0 = m1 = 15`.
+- Reuse. A layer-1 encoding is a function of its raw chunk and `m1` encodings that a miner holds
+  for their own positions. A party holding the layer-0 encodings that its regenerable layer-1
+  chunks use forms those chunks' encodings without holding them; `m1` sets the reads this
+  costs. The results use `m0 = m1 = m`.
+
+### Results
+
+Results (informative; no requirement of this specification depends on them). Regtest,
+2026-10-05, branch `ddpow-groups`: chains built by `test/functional/ddpow_groups_experiment.py`
+(`--save`) and evaluated by `test/functional/ddpow_encoding_table.py`; `k = 8`, `W = 144`. Each
+chain has 101 blocks without payload, 300 blocks with random payloads, then 200 (run A) or 700
+blocks, each mined by a stuffer with probability `h`. A stuffer payload is 880,000 bytes of
+BLAKE2b-512 output in counter mode from a seed, checked byte for byte against the chain; other
+payloads are random bytes:
+
+- A: `h = 0.3`, other payloads 880,000 bytes; 0.1188 of the chunks regenerable.
+- B: `h = 0.5`, other payloads 880,000 bytes; 0.3466 regenerable.
+- C: `h = 0.5`, other payloads 220,000 bytes; 0.6750 regenerable.
+- D: `h = 0.3`, other payloads 220,000 bytes; 0.5118 regenerable.
+
+Each value is the stuffer's speedup over an honest miner at the same read rate. Single tier:
+`n / (n - f)`, where `f` of the `n` positions (the complete windows for groups, every chunk
+otherwise) have an encoded or packed chunk the stuffer forms from regenerable data. Fast tier: a
+tier of `n / 4` chunks whose reads cost `c` against 1 for a storage read; the honest miner holds
+encoded or packed chunks in it, and the speedup is the honest miner's total read cost over the
+stuffer's. A position costs `c` per held chunk read to form it, or 1 if it cannot be formed from
+held and regenerable data. The stuffer's holdings: for groups, the raw chunks of groups'
+non-regenerable members, greedily by saving per slot; for packing and two-layer packing, raw
+chunks oldest first or most used by its regenerable chunks first (best of five amounts), and for
+two-layer packing also the layer-0 encodings used by the most regenerable layer-1 chunks; encoded
+or packed chunks in the remaining slots. The analysis's two-layer partners and encodings equal
+those of branch `ddpow-twolayer`'s node at sampled positions
+(`test/functional/ddpow_twolayer_experiment.py` there).
+
+| Run | Encoding            | Single tier | `c = 0` | `c = 0.07` | `c = 0.15` |
+| --- | ------------------- | ----------- | ------- | ---------- | ---------- |
+| A   | groups, `g = 8`     | 1.0000      | 1.1381  | 1.0265     | 1.0050     |
+| A   | groups, `g = 16`    | 1.0000      | 1.1277  | 1.0007     | 1.0000     |
+| A   | packing, `m = 7`    | 1.0000      | 1.0003  | 1.0000     | 1.0000     |
+| A   | packing, `m = 15`   | 1.0000      | 1.0000  | 1.0000     | 1.0000     |
+| A   | two-layer, `m = 7`  | 1.0000      | 1.0680  | 1.0328     | 1.0000     |
+| A   | two-layer, `m = 15` | 1.0000      | 1.0098  | 1.0000     | 1.0000     |
+| B   | groups, `g = 8`     | 1.0046      | 1.6132  | 1.3067     | 1.1300     |
+| B   | groups, `g = 16`    | 1.0000      | 1.5629  | 1.0773     | 1.0096     |
+| B   | packing, `m = 7`    | 1.0000      | 1.0374  | 1.0000     | 1.0000     |
+| B   | packing, `m = 15`   | 1.0000      | 1.0036  | 1.0000     | 1.0000     |
+| B   | two-layer, `m = 7`  | 1.0000      | 1.1209  | 1.0569     | 1.0000     |
+| B   | two-layer, `m = 15` | 1.0000      | 1.0622  | 1.0000     | 1.0000     |
+| C   | groups, `g = 8`     | 1.1650      | 7.8406  | 3.6761     | 2.4510     |
+| C   | groups, `g = 16`    | 1.0219      | 7.8406  | 2.3820     | 1.5360     |
+| C   | packing, `m = 7`    | 1.0181      | 5.5623  | 1.9482     | 1.1974     |
+| C   | packing, `m = 15`   | 1.0005      | 3.7646  | 1.1064     | 1.0006     |
+| C   | two-layer, `m = 7`  | 1.0087      | 5.1443  | 1.1519     | 1.0346     |
+| C   | two-layer, `m = 15` | 1.0003      | 3.2623  | 1.0066     | 1.0003     |
+| D   | groups, `g = 8`     | 1.0238      | 2.4531  | 1.7923     | 1.4098     |
+| D   | groups, `g = 16`    | 1.0006      | 2.3551  | 1.3279     | 1.0734     |
+| D   | packing, `m = 7`    | 1.0016      | 1.4663  | 1.0634     | 1.0020     |
+| D   | packing, `m = 15`   | 1.0000      | 1.2716  | 1.0000     | 1.0000     |
+| D   | two-layer, `m = 7`  | 1.0007      | 1.3797  | 1.0931     | 1.0009     |
+| D   | two-layer, `m = 15` | 1.0000      | 1.2417  | 1.0000     | 1.0000     |
+
+With the fast tier, groups of 8 exceeded packing with 7 partners, and groups of 16 exceeded
+packing with 15 partners, in every run and at every cost `c`, except groups of 16 against 15
+partners in run A at `c = 0.15`, where both are 1.0000. At `c = 0.15`, two-layer packing was at
+most 1.0346 with `m = 7` and 1.0003 with `m = 15`, and packing at most 1.1974 with 7 partners and
+1.0006 with 15 (all in run C). At `c = 0`, every encoding gave run C a speedup of at least
+3.2623: a party that regenerates 0.6750 of the chain can hold 0.25 / 0.3250 = 0.7692 of the
+other chunks in a tier of a quarter of the chain and form its chunks from that tier.
 
 ## Backwards compatibility
 
@@ -283,38 +454,34 @@ for future use
 ([bitcoinknots/bitcoin@9a8127194d](https://github.com/bitcoinknots/bitcoin/commit/9a8127194dbc56925e6215e1e48e2733b4e8b32b)),
 is hashed in the header hash's `Merge-mining hook` stage
 ([`block.cpp` line 57](https://github.com/bitcoinknots/bitcoin/blob/58398baf33e588779685ead478e6397bb28ed3d6/src/primitives/block.cpp#L57))
-and not checked before `A`; it carries the commitment and is no longer available for merged
-mining.
+and is not used by this rule.
 
 Mining. No `h0` is compared with a target, so every `h0` is an attempt that requires the reads.
-BLAKE2b mining devices return only nonces whose stage-3 digest meets a share target, so a device
-supplies attempts at the rate it returns results, not at its hash rate, and a share check on the
-stage-3 digest no longer measures work: a share is checked on `mr(final)`, which requires the
-chain or a proof section. `getblocktemplate` reports the `mm_rhs` value for the template's
-parent. A block submitted with `submitblock` carries its proof section, which is built by a
-party holding the chain and the tree's interior nodes (Costs).
+BLAKE2b mining devices return only nonces whose `h0` meets a share target, so a device supplies
+attempts at the rate it returns results, not at its hash rate, and a share check on `h0` no longer
+measures work: a share is checked on `mr(final)`, which requires the chain. A miner keeps the
+packed chunks, which it reads, and the raw blocks, which packing new blocks reads.
+
+Validation. Checking work from `A` requires every earlier block. Pruned nodes, nodes started from
+a snapshot until they hold the earlier blocks, and light clients cannot check it (Open questions:
+Pruned nodes). In headers-first synchronization a header's work is checked once the blocks before
+it are held.
 
 ## Costs
 
 Mining. A miner cannot complete attempts faster than it reads the chain. With the parent cached,
-an attempt costs `k - 1` random 4,096-byte reads from the rest of the chain, so a copy with
-random read rate `R` completes at most `R / (k - 1)` attempts per second. Reads within an
-attempt are serial, so parallel reads come from parallel attempts. An attempt evaluates the
-BLAKE2b compression function 264 times over chunks (33 per step, a 4,128-byte input) besides
-the header's stages.
+an attempt costs `k - 1` random reads of 4,096-byte packed chunks from the rest of the chain, so
+a copy with random read rate `R` completes at most `R / (k - 1)` attempts per second. Reads
+within an attempt are serial, so parallel reads come from parallel attempts. An attempt
+evaluates the BLAKE2b compression function 264 times over chunks (33 per step, a 4,128-byte
+input) besides the header's stages. Packing a block reads `m` raw partners per chunk: 6,839 for a
+4,000,000-byte block of 977 chunks. Building the packed copy reads `m` raw partners per chunk of
+the chain.
 
-Proof sections. At most 40,244 bytes per block while `N < 2^28`: at 52,560 blocks per year
-(600-second spacing), at most 2,115,224,640 bytes per year. Building paths requires the tree's
-interior nodes: at level 1 and above, `N - popcount(N)` nodes, fewer than `32 x N` bytes (1/128
-of the chain's size), with each path's level-0 sibling recomputed from its chunk. A node that
-sends blocks or `hdrproofs` to peers stores either the sections or the blocks and the tree's
-interior nodes, from which it builds any section on request. A node that sends neither may
-discard a block's section once the block is validated.
-
-Validation. Pruned nodes validate from the per-block tree state (Verification) and the proof
-section. Light clients download at most 40,244 bytes of proof section with each 164-byte header
-while `N < 2^28`, and keep `N` and the peaks, `8 + 32 x popcount(N)` bytes (at most 904 while
-`N < 2^28`), per header.
+Validation. A node without a packed copy reads at most `k x (m + 1) = 64` raw chunks per header,
+in `k` serial rounds of at most `m + 1` reads; a chunk's partners depend only on its position and
+its block's hash, so a round's reads can be issued together. With a packed copy, a header takes `k`
+reads. A node keeps its raw blocks, since partners lie anywhere in the chain.
 
 ## Deployment
 
@@ -377,14 +544,11 @@ a holder of a fraction `f` of the chain spends the storage reads per completed a
 Rationale. A partial holder may instead fetch missing chunks from a remote holder, at an
 expected `4,096 x (k - 1) x (1 - f)` bytes and up to `k - 1` serial round trips per attempt;
 chaining does not prevent this; its cost is that bandwidth, compared with the cost of storing
-the missing part locally. Forged reads: every node checks each chunk's path to its own peaks.
-Fabricated trees: a proof checked against peaks the prover supplies, with only `mm_rhs` from the
-header, passes with fabricated chunks at the cost of hash attempts alone, 17,179,869,183
-attempts per block at the reset `nBits`. Checked from the anchor, a fork of `m` blocks after the
-anchor holds at most `m x C_max` fabricated chunks, and each of reads 1 to `k - 1` falls in
-chunks the anchor fixes with probability at least `1 - m x C_max / N`, so fabricated headers
-require reads of the anchored chain. `m` counts every block after the anchor, so the fabricated
-share can grow by `C_max` chunks per block.
+the missing part locally. Forged reads: a node reads every chunk from its own copy. Regenerable
+data: a party saves a storage read on a packed chunk only if the chunk and every partner are data
+it regenerates (Packing); a party keeping raw chunks in a faster tier also computes a
+regenerable chunk at that tier's cost when every partner is regenerable or in the tier (Open
+questions).
 
 ## Open questions
 
@@ -393,15 +557,6 @@ share can grow by `C_max` chunks per block.
   alternative pre-activation segment can raise one 2016-block period's difficulty 4x, adding
   3 x 2016 x 1.986e19 = 1.20e23 attempts of work, the work of 6.99e12 blocks at the reset `nBits`.
   How chains that diverge before `A` are compared is not specified.
-- Header followers: each `hdrproofs` entry carries the header's full proof section (Relay), at
-  most 40,244 bytes while `N < 2^28` against 164 bytes of header, of which at most 564 are the
-  tree extension (`len`, `N`, `S` and at most 17 `ext` roots). How a header follower can check
-  headers' work with less than one section per header is not specified.
-- Stripped blocks: a node holding the chain could ask a peer, between `version` and `verack` (a
-  BIP434 `feature` message; Bitcoin Knots does not implement BIP434, and without it a
-  `sendddpow` message), to omit the section from `block` and `cmpctblock` messages, and check
-  the reads against its own chain. A block's validity would not change: its work must be valid
-  whether or not its section was sent.
 - Concentration: the security model changes from aggregate hash rate to aggregate read
   throughput over held chains; its concentration properties (drive versus memory cost per unit
   rate) are not analyzed.
@@ -416,22 +571,101 @@ share can grow by `C_max` chunks per block.
   to the value of the rewards, against an attacker paying up to the value of the reversed
   transactions. Each rented machine must first be loaded with a copy of the chain. The cost of
   reversing a transaction with a given number of confirmations under this rule is not analyzed.
-- Test vectors: none yet.
+- Cached partners: partners are older than their block, so the raw chunks of the oldest blocks
+  are partners of every later chunk. A party keeping raw chunks in a faster tier, the oldest or
+  those most used as partners of its regenerable chunks, computes a regenerable chunk at that
+  tier's read cost whenever every partner is regenerable or in the tier, which raises its
+  advantage above `s^m` while `m` fast-tier reads cost less than one storage read (Packing:
+  Results). Drawing
+  partners from the whole chain, re-packing at fixed intervals, would remove this dependence on
+  age; it is not specified. Group encoding has no dependence on age but depends on each group's
+  own members (Packing: Option: group encoding).
+- Encoding: packing makes miners keep the raw blocks and a packed copy. Group encoding lets a miner
+  keep one copy, but its groups are closed, so a party holding the non-regenerable raw members of
+  groups that are mostly its data forms their encodings with fewer fast-tier slots than an honest
+  miner; in runs B to D of the results its advantage exceeded packing's at every fast-tier cost.
+  Two-layer packing lets a miner keep one copy with partners spread as in packing, at up to
+  `k x (1 + m1 x (1 + m0))` raw reads per header for a node without encodings. Which is specified,
+  and its partner or group counts, is not decided.
+- Pruned nodes: a node that discards blocks cannot check work from `A`. It could keep a Merkle
+  mountain range over the raw chunks, appending each block's chunks when the block is validated
+  (an append needs only the new chunks and the current peaks), and each block's chunk count,
+  which with its block hash gives every partner position. A node holding the chain would send the
+  pruned node, for each block, the `k x (m + 1)` raw chunks the walk reads with their paths, at
+  most 318,004 bytes while `N < 2^28`; the pruned node checks the paths against its peaks, forms
+  the packed chunks and runs the walk, and a path that fails is the sender's fault, not the
+  block's. The leaves must be raw chunks, since appending packed leaves requires partners from
+  the whole chain. This changes no consensus rule but requires a peer that holds the chain. A
+  tree root committed in each block would also let nodes that did not build the tree (nodes
+  started from a snapshot, light clients, nodes checking headers before their blocks) check work
+  from the same sections. Neither is specified.
+- Unchecked headers: a header's work cannot be checked until the blocks before it are held. How
+  a node bounds the headers it stores before checking them is not specified.
+
+## Test vectors
+
+The vectors use 14 byte strings in place of serialized blocks; the chunk space, packing and the
+walk apply to them unchanged. String `b` (`b = 0..13`) has length `L_b`, from
+`[285, 4095, 4096, 4097, 10000, 1, 9000, 20000, 30000, 4096, 12288, 50000, 7000, 40000]`, and is
+the concatenation of `BLAKE2b-256(ASCII "blk" || LE32(b) || LE32(i))` for `i = 0, 1, ...`,
+truncated to `L_b` bytes. `I_b = BLAKE2b-256(ASCII "id" || LE32(b))`. String 0 begins
+`130879cbb006877576360ceb50c065697fd07f1ad87e3d5d18ac8d4239bb0755`, and
+`I_0 = 18d727d27284acabf9311e5b0837c37f90e075c449c1dba60adf062da92745bf`. The space is that of a
+block whose parent is string 13: `N = 54`, `S = 44`, and `first_b` is
+`[0, 1, 2, 3, 5, 8, 9, 12, 17, 25, 26, 29, 42, 44]`.
+
+Packing with `m = 7` (SHA-256 of the 4,096-byte packed chunk):
+
+| `a` | `b` | `u` | partners | SHA-256 of `packed(a)` |
+| --- | --- | --- | -------- | ---------------------- |
+| 0  | 0  | 0 | none | `d7e9cb80c435795a67bdccd18f921b2102ff82cbb977ebd23a2b5d80a78d6f7a` |
+| 3  | 3  | 0 | 0, 1, 2 | `e4496d67cf522df1f4f5fb370e223939c8633bb2d94f04a6c8a3388fd0d452af` |
+| 5  | 4  | 0 | 0, 1, 2, 3, 4 | `3c122ed6153d05f1686455b617c65a7e2ce2d4c6f637d8960738feeca381bfb1` |
+| 12 | 7  | 0 | 1, 9, 2, 10, 3, 0, 11 | `80f59a0fbfe4384ad64cd50b10639dfd16722b6a04a4774f19a99442bda83817` |
+| 30 | 11 | 1 | 11, 14, 9, 4, 26, 2, 15 | `42371042fe223513e4c47c6f00850fefc562f58eee272d506807e6924f4af510` |
+| 44 | 13 | 0 | 2, 18, 24, 33, 38, 30, 10 | `15b6ef2d39864b1555daad1ba984994bf30eb0726e7805534ef378ea0f4802c9` |
+| 53 | 13 | 9 | 13, 36, 38, 4, 35, 6, 5 | `3c67e7c346380a38b3ed5667246ca1589d07303521a6d1c6ac9c926ef70082f4` |
+
+Walks with `k = 8`, `m = 7` (`h0` and `final` as 32 bytes in digest order):
+
+- `h0 = BLAKE2b-256(ASCII "hash2")` =
+  `c42e1fde64fe247106e7b67d4f280dec37eec7f974e7372414a83df4a048a347`: positions
+  `52, 23, 9, 11, 32, 28, 4, 36`;
+  `final = 50dfaa122d6d10463baa607b9a836fc085b231d96e2da98ca412090ff05a3c2e`.
+- `h0 = BLAKE2b-256(ASCII "test vector 2")` =
+  `9c8bfb368f168c3bc3e7805f7619348030a2ed7f1df5df5ebfb78f5619e67583`: positions
+  `48, 17, 11, 12, 12, 31, 30, 8`;
+  `final = e0395a36a2dbfcb7c2978db06fc4b7f15acf194a66116ea2295a741698b0ec86`.
+
+The reference implementation's unit test `bip_test_vectors` checks these values.
 
 ## Reference implementation
 
-A regtest implementation in a fork of Bitcoin Knots (branch `ddpow-strong`, `-ddpowstrong=1`)
-implements the rule, the node's miner, the proof section in `block`, `cmpctblock`,
-`submitblock` and `hdrproofs` in the encoding above, `sendddpow`, header verification from an
-anchor set by a configuration option, pruned validation, fault attribution, the raised message
-size limit, and the Deployment schedule. It differs from this specification in:
+A regtest implementation in a fork of Bitcoin Knots (branch `ddpow-pack`;
+`-testactivationheight=ddpow@<height>`, `-ddpowreads=<k>`, `-ddpowpartners=<m>`) implements the
+chunk space, packing, the walk, the node's miner, and validation from the node's block files. It
+differs from this specification in:
 
-- Difficulty on regtest: a fixed target from `A`, not the Deployment schedule. The schedule is
-  used by its `ddpowtest` network (Testnet4's history, the rule from block 152,110) with a
-  reset of `0x1e00ffff` and a limit of `2^255 - 1`; its mainnet parameters carry this
-  specification's values with `A` unassigned.
+- Difficulty on regtest: a fixed target from `A` (`-ddpowblockbits`), not the Deployment
+  schedule, which this branch does not implement.
 
-Its functional tests check it against an independent Python implementation.
+It stores a header whose earlier blocks it does not hold without checking its work, and checks the
+work when the block connects. With `-ddpowpackedstore` its miner keeps a packed copy of the chain
+it follows (packing the blocks it lacks before it mines, and truncating to the common ancestor
+after a reorganization) and walks it with one read per step. Its unit tests check partners, packed
+chunks and walks against vectors from an independent Python implementation, against which its
+functional tests also check every block.
+
+Branch `ddpow-groups` (`-ddpowgroup=<g>`, `-ddpowwindow=<W>`) is the same implementation with
+group encoding (Packing: Option: group encoding) in place of packing. Its unit tests check
+windows, groups, encoded chunks, decoding and walks against vectors from an independent Python
+implementation, against which its functional tests also check every block.
+
+Branch `ddpow-twolayer` (`-ddpowpartners0=<m0>`, `-ddpowpartners1=<m1>`, default 15 each) is the
+same implementation with two-layer packing (Packing: Option: two-layer packing) in place of
+packing. Its unit tests check layers, partners, encodings, walks and the recovery of raw chunks
+from encodings against vectors from an independent Python implementation, against which its
+functional tests also check every block.
 
 ## Prior art
 
@@ -440,8 +674,8 @@ Reads of chain data selected by a hash:
 - [Hashimoto](http://diyhpl.us/~bryan/papers2/bitcoin/meh/hashimoto.pdf) (Dryja, undated,
   cited as 2014): the header hash selects 64 transaction identifiers across the whole chain;
   verifiers repeat the lookups against their own chain. This rule has the same order (header
-  hash, then reads, then the target check) and reads raw block bytes at chained positions, with
-  proofs.
+  hash, then reads, then the target check) and reads packed chunks of block bytes at chained
+  positions.
 - [Popescu](http://web.archive.org/web/20251114113328/http://trilema.com/2016/the-necessary-prerequisite-for-any-change-to-the-bitcoin-protocol/)
   (2016): a digest of the nonce-th byte of every preceding block enters the header hash.
   Selection by the nonce alone lets one digest table serve every miner; here positions depend on
@@ -458,7 +692,8 @@ Reads of chain data selected by a hash:
   "to millions of clients per second via a Gbit Internet link" and that such a pool "has been
   evidenced in the Arweave network". [Arweave 2.6](https://2-6-spec.arweave.net/) adds
   encoding of the data per mining address and a verifiable delay function that limits reads per
-  second; this rule has neither.
+  second; this rule packs chunks with other chain data instead and has no verifiable delay
+  function.
 
 Sequential reads, each position derived from the previous step:
 
@@ -471,7 +706,7 @@ Sequential reads, each position derived from the previous step:
 - [Merkle Tree Proof](https://arxiv.org/abs/1606.03588) (Biryukov, Khovratovich, 2016): 70
   sequential reads of a generated dataset, each opened by a Merkle path to a committed root.
   [Attacks on its deployment](https://blog.zorinaq.com/attacks-on-mtp/) include openings not
-  checked against their positions; here a verifier computes each `a_i` and folds each path by it.
+  checked against their positions; here a verifier computes each `a_i` and reads the chunk itself.
 - [Lerner](https://bitslog.com/2014/11/03/proof-of-local-blockchain-storage/) (2014,
   [revised 2015](https://bitslog.com/2015/09/16/proof-of-unique-blockchain-storage-revised/)):
   timed challenges over the chain at chained indices, with the chain encoded per node identity so
@@ -485,16 +720,6 @@ Generated datasets:
   storage as an optional goal; Ethash removed it. A generated dataset does not require holding
   the chain.
 
-Commitments:
-
-- [Merkle mountain range](https://github.com/opentimestamps/opentimestamps-server/blob/master/doc/merkle-mountain-range.md)
-  (Todd, 2012): the tree structure used here.
-- [RFC 6962](https://www.rfc-editor.org/rfc/rfc6962.txt) (2013): the leaf and node prefixes
-  `0x00` and `0x01`.
-- [FlyClient](https://eprint.iacr.org/2019/226) (Bünz, Kiffer, Luu, Zamani, 2019) and
-  [ZIP 221](https://zips.z.cash/zip-0221) (Zcash, 2019): each header commits to a Merkle mountain
-  range through its parent; the leaves are header-derived values, not block bytes.
-
 Outsourcing and archival requirements:
 
 - [Nonoutsourceable scratch-off puzzles](https://www.cs.umd.edu/~jkatz/papers/nonoutsourceable.pdf)
@@ -503,7 +728,3 @@ Outsourcing and archival requirements:
 - [Todd](https://www.mail-archive.com/bitcoin-dev@lists.linuxfoundation.org/msg03178.html)
   (2015): each block commits to a hash of the previous block's witness data with a per-miner
   prefix; once per block, outside the hashing loop.
-
-Searches of papers, forums, mailing lists, specifications and code found no precedent for raw
-serialized block bytes as committed leaves, a required read in the parent block, or proofs
-carried with headers during headers-first synchronization.
