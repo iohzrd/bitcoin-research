@@ -297,7 +297,18 @@ struct Data {
     const uint64_t* parent;
     uint64_t n;
     uint64_t s;
+    /** If set: threads tid = k * trace_stride (k < 128) store their first attempt's final at
+     *  trace[4k..4k+3], so the timed kernel's own output can be checked (verify.py). */
+    uint64_t* trace{nullptr};
+    uint64_t trace_stride{1};
 };
+
+__device__ __forceinline__ void record(const Data& d, uint64_t tid, int it, const uint64_t x[4])
+{
+    if (d.trace && it == 0 && tid % d.trace_stride == 0 && tid / d.trace_stride < 128) {
+        for (int j = 0; j < 4; ++j) d.trace[4 * (tid / d.trace_stride) + j] = x[j];
+    }
+}
 
 template <int W>
 __device__ __forceinline__ const uint64_t* chunk_at(const Data& d, uint64_t a)
@@ -332,6 +343,7 @@ __global__ void attempts_kernel(Data d, uint64_t stream_base, uint64_t nonce_bas
     uint64_t acc = 0, x[4];
     for (int it = 0; it < iters; ++it) {
         attempt<W, STEP>(d, stream_base + tid, nonce_base + it, x);
+        record(d, tid, it, x);
         acc ^= x[0];
     }
     sink[tid] ^= acc;
@@ -424,6 +436,7 @@ __global__ void staged_kernel(Data d, uint64_t stream_base, uint64_t nonce_base,
             for (int k = 0; k < 4; ++k) x[k] = h[k];
             a = x[0] % d.n;
         }
+        record(d, tid, it, x);
         acc ^= x[0];
     }
     sink[tid] ^= acc;
@@ -681,6 +694,26 @@ int main(int argc, char** argv)
            n, args.tpb, args.bpsm, elapsed, rate, reads, reads * chunk_bytes / 1e9, remote, fill_s);
     fflush(stdout);
 
+    // The timed kernel's own output: one more round on the first GPU with tracing on.
+    std::vector<uint64_t> traced;
+    uint64_t trace_round{0}, trace_stride{1};
+    if (!args.samples.empty()) {
+        Gpu& g{gpus[0]};
+        CHECK(cudaSetDevice(g.device));
+        uint64_t* dtrace;
+        CHECK(cudaMalloc(&dtrace, 128 * 32));
+        const uint64_t threads{uint64_t(g.blocks) * args.tpb};
+        trace_stride = std::max<uint64_t>(1, threads / 128);
+        g.data.trace = dtrace;
+        g.data.trace_stride = trace_stride;
+        trace_round = round;
+        dispatch(W, step, g, args.tpb, 0, trace_round * 1'000'000ULL, 1);
+        CHECK(cudaDeviceSynchronize());
+        traced.resize(128 * 4);
+        CHECK(cudaMemcpy(traced.data(), dtrace, 128 * 32, cudaMemcpyDeviceToHost));
+        g.data.trace = nullptr;
+    }
+
     // Samples, computed on the first GPU (in peer mode through peer pointers) for verify.py.
     if (!args.samples.empty()) {
         CHECK(cudaSetDevice(gpus[0].device));
@@ -705,6 +738,14 @@ int main(int argc, char** argv)
             fprintf(f, "%" PRIu64 " %" PRIu64 " ", st[i], no[i]);
             for (int j = 0; j < 4; ++j) {
                 for (int b = 0; b < 8; ++b) fprintf(f, "%02x", unsigned(fin[4 * i + j] >> (8 * b)) & 0xff);
+            }
+            fprintf(f, "\n");
+        }
+        // From the timed kernel (`kernel`): thread k * stride, stream k * stride, first nonce.
+        for (int k = 0; k < 128; ++k) {
+            fprintf(f, "%" PRIu64 " %" PRIu64 " ", uint64_t(k) * trace_stride, trace_round * 1'000'000ULL);
+            for (int j = 0; j < 4; ++j) {
+                for (int b = 0; b < 8; ++b) fprintf(f, "%02x", unsigned(traced[4 * k + j] >> (8 * b)) & 0xff);
             }
             fprintf(f, "\n");
         }
