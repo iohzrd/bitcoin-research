@@ -1,0 +1,141 @@
+== machine
+index, name, memory.total [MiB], power.limit [W]
+0, NVIDIA H200, 143771 MiB, 700.00 W
+1, NVIDIA H200, 143771 MiB, 700.00 W
+2, NVIDIA H200, 143771 MiB, 700.00 W
+3, NVIDIA H200, 143771 MiB, 700.00 W
+4, NVIDIA H200, 143771 MiB, 700.00 W
+5, NVIDIA H200, 143771 MiB, 700.00 W
+6, NVIDIA H200, 143771 MiB, 700.00 W
+7, NVIDIA H200, 143771 MiB, 700.00 W
+	[4mGPU0	GPU1	GPU2	GPU3	GPU4	GPU5	GPU6	GPU7	NIC0	NIC1	NIC2	NIC3	NIC4	NIC5	NIC6	NIC7	CPU Affinity	NUMA Affinity	GPU NUMA ID[0m
+GPU0	 X 	NV18	NV18	NV18	NV18	NV18	NV18	NV18	PIX	PHB	PHB	PHB	SYS	SYS	SYS	SYS	0-105	0		N/A
+GPU1	NV18	 X 	NV18	NV18	NV18	NV18	NV18	NV18	PHB	PIX	PHB	PHB	SYS	SYS	SYS	SYS	0-105	0		N/A
+GPU2	NV18	NV18	 X 	NV18	NV18	NV18	NV18	NV18	PHB	PHB	PIX	PHB	SYS	SYS	SYS	SYS	0-105	0		N/A
+GPU3	NV18	NV18	NV18	 X 	NV18	NV18	NV18	NV18	PHB	PHB	PHB	PIX	SYS	SYS	SYS	SYS	0-105	0		N/A
+GPU4	NV18	NV18	NV18	NV18	 X 	NV18	NV18	NV18	SYS	SYS	SYS	SYS	PIX	PHB	PHB	PHB	106-211	1		N/A
+GPU5	NV18	NV18	NV18	NV18	NV18	 X 	NV18	NV18	SYS	SYS	SYS	SYS	PHB	PIX	PHB	PHB	106-211	1		N/A
+GPU6	NV18	NV18	NV18	NV18	NV18	NV18	 X 	NV18	SYS	SYS	SYS	SYS	PHB	PHB	PIX	PHB	106-211	1		N/A
+GPU7	NV18	NV18	NV18	NV18	NV18	NV18	NV18	 X 	SYS	SYS	SYS	SYS	PHB	PHB	PHB	PIX	106-211	1		N/A
+NIC0	PIX	PHB	PHB	PHB	SYS	SYS	SYS	SYS	 X 	PHB	PHB	PHB	SYS	SYS	SYS	SYS				
+NIC1	PHB	PIX	PHB	PHB	SYS	SYS	SYS	SYS	PHB	 X 	PHB	PHB	SYS	SYS	SYS	SYS				
+NIC2	PHB	PHB	PIX	PHB	SYS	SYS	SYS	SYS	PHB	PHB	 X 	PHB	SYS	SYS	SYS	SYS				
+NIC3	PHB	PHB	PHB	PIX	SYS	SYS	SYS	SYS	PHB	PHB	PHB	 X 	SYS	SYS	SYS	SYS				
+NIC4	SYS	SYS	SYS	SYS	PIX	PHB	PHB	PHB	SYS	SYS	SYS	SYS	 X 	PHB	PHB	PHB				
+NIC5	SYS	SYS	SYS	SYS	PHB	PIX	PHB	PHB	SYS	SYS	SYS	SYS	PHB	 X 	PHB	PHB				
+NIC6	SYS	SYS	SYS	SYS	PHB	PHB	PIX	PHB	SYS	SYS	SYS	SYS	PHB	PHB	 X 	PHB				
+NIC7	SYS	SYS	SYS	SYS	PHB	PHB	PHB	PIX	SYS	SYS	SYS	SYS	PHB	PHB	PHB	 X 				
+
+Legend:
+
+  X    = Self
+  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)
+  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node
+  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)
+  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)
+  PIX  = Connection traversing at most a single PCIe bridge
+  NV#  = Connection traversing a bonded set of # NVLinks
+
+NIC Legend:
+
+  NIC0: mlx5_0
+  NIC1: mlx5_1
+  NIC2: mlx5_2
+  NIC3: mlx5_3
+  NIC4: mlx5_4
+  NIC5: mlx5_5
+  NIC6: mlx5_6
+  NIC7: mlx5_7
+
+Cuda compilation tools, release 13.0, V13.0.88
+Build cuda_13.0.r13.0/compiler.36424714_0
+== build
+CUDA starts on all 7 GPUs; 8 s per run, 104 GiB per GPU, 8 blocks per SM
+== reference: the strong-rule benchmark's staged kernel, all GPUs
+{"kernel":"staged","mode":"peer","gpu":"NVIDIA H200","gpus":7,"chunk":4096,"step":"blake2b","gib_per_gpu":104.000,"chunks":190840832,"tpb":128,"bpsm":8,"seconds":8.13,"attempts_per_s":9.0468e+07,"reads_per_s":7.2374e+08,"read_GBps":2964.5,"remote_read_fraction":0.750,"fill_s":1.13}
+== generation cost (one GPU, cache-resident dataset): every chunk read, every chunk generated
+samples: timed kernel equals reference on 128 of 128
+{"name":"ceiling-read","mode":"ceiling","gpu":"NVIDIA H200","gpus":1,"partners":0,"regen":0.0000,"generate":1,"gib_per_gpu":0.000,"chunks":64,"tpb":128,"bpsm":8,"seconds":8.22,"attempts_per_s":2.3492e+07,"chunk_reads_per_s":1.8793e+08,"read_GBps":769.8,"chunks_generated_per_s":0.0000e+00,"reads_per_step":1.000,"generated_per_step":0.000,"fill_s":0.11}
+results/24116e44d4a6-pack-20261005T173323Z/samples-ceiling-read.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"ceiling-gen","mode":"ceiling","gpu":"NVIDIA H200","gpus":1,"partners":0,"regen":1.0000,"generate":1,"gib_per_gpu":0.000,"chunks":64,"tpb":128,"bpsm":8,"seconds":8.00,"attempts_per_s":2.2299e+07,"chunk_reads_per_s":0.0000e+00,"read_GBps":0.0,"chunks_generated_per_s":1.7839e+08,"reads_per_step":0.000,"generated_per_step":1.000,"fill_s":0.11}
+results/24116e44d4a6-pack-20261005T173323Z/samples-ceiling-gen.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+== all 7 GPUs: honest (one packed chunk per step), stuffer (s regenerable, m partners)
+samples: timed kernel equals reference on 128 of 128
+{"name":"honest-7","mode":"peer","gpu":"NVIDIA H200","gpus":7,"partners":0,"regen":0.0000,"generate":0,"gib_per_gpu":104.000,"chunks":190840832,"tpb":128,"bpsm":8,"seconds":8.16,"attempts_per_s":7.2909e+07,"chunk_reads_per_s":5.8327e+08,"read_GBps":2389.1,"chunks_generated_per_s":0.0000e+00,"reads_per_step":1.000,"generated_per_step":0.000,"fill_s":1.99}
+results/24116e44d4a6-pack-20261005T173323Z/samples-honest-7.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"stuff-7-s0.35-m0","mode":"peer","gpu":"NVIDIA H200","gpus":7,"partners":0,"regen":0.3500,"generate":1,"gib_per_gpu":104.000,"chunks":190840832,"tpb":128,"bpsm":8,"seconds":8.01,"attempts_per_s":7.8633e+07,"chunk_reads_per_s":4.0893e+08,"read_GBps":1675.0,"chunks_generated_per_s":2.2013e+08,"reads_per_step":0.650,"generated_per_step":0.350,"fill_s":1.99}
+results/24116e44d4a6-pack-20261005T173323Z/samples-stuff-7-s0.35-m0.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"stuff-7-s0.35-m7","mode":"peer","gpu":"NVIDIA H200","gpus":7,"partners":7,"regen":0.3500,"generate":1,"gib_per_gpu":104.000,"chunks":190840832,"tpb":128,"bpsm":8,"seconds":8.12,"attempts_per_s":1.2233e+07,"chunk_reads_per_s":5.0894e+08,"read_GBps":2084.6,"chunks_generated_per_s":2.7398e+08,"reads_per_step":5.200,"generated_per_step":2.800,"fill_s":1.98}
+results/24116e44d4a6-pack-20261005T173323Z/samples-stuff-7-s0.35-m7.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"stuff-7-s0.35-m11","mode":"peer","gpu":"NVIDIA H200","gpus":7,"partners":11,"regen":0.3500,"generate":1,"gib_per_gpu":104.000,"chunks":190840832,"tpb":128,"bpsm":8,"seconds":8.06,"attempts_per_s":8.2209e+06,"chunk_reads_per_s":5.1302e+08,"read_GBps":2101.3,"chunks_generated_per_s":2.7618e+08,"reads_per_step":7.801,"generated_per_step":4.199,"fill_s":2.00}
+results/24116e44d4a6-pack-20261005T173323Z/samples-stuff-7-s0.35-m11.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"stuff-7-s0.35-m15","mode":"peer","gpu":"NVIDIA H200","gpus":7,"partners":15,"regen":0.3500,"generate":1,"gib_per_gpu":104.000,"chunks":190840832,"tpb":128,"bpsm":8,"seconds":8.11,"attempts_per_s":6.1872e+06,"chunk_reads_per_s":5.1481e+08,"read_GBps":2108.7,"chunks_generated_per_s":2.7715e+08,"reads_per_step":10.401,"generated_per_step":5.599,"fill_s":2.00}
+results/24116e44d4a6-pack-20261005T173323Z/samples-stuff-7-s0.35-m15.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"stuff-7-s0.51-m0","mode":"peer","gpu":"NVIDIA H200","gpus":7,"partners":0,"regen":0.5100,"generate":1,"gib_per_gpu":104.000,"chunks":190840832,"tpb":128,"bpsm":8,"seconds":8.05,"attempts_per_s":8.2636e+07,"chunk_reads_per_s":3.2396e+08,"read_GBps":1326.9,"chunks_generated_per_s":3.3714e+08,"reads_per_step":0.490,"generated_per_step":0.510,"fill_s":1.99}
+results/24116e44d4a6-pack-20261005T173323Z/samples-stuff-7-s0.51-m0.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"stuff-7-s0.51-m7","mode":"peer","gpu":"NVIDIA H200","gpus":7,"partners":7,"regen":0.5100,"generate":1,"gib_per_gpu":104.000,"chunks":190840832,"tpb":128,"bpsm":8,"seconds":8.19,"attempts_per_s":1.3168e+07,"chunk_reads_per_s":4.1298e+08,"read_GBps":1691.5,"chunks_generated_per_s":4.2980e+08,"reads_per_step":3.920,"generated_per_step":4.080,"fill_s":2.00}
+results/24116e44d4a6-pack-20261005T173323Z/samples-stuff-7-s0.51-m7.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"stuff-7-s0.51-m11","mode":"peer","gpu":"NVIDIA H200","gpus":7,"partners":11,"regen":0.5100,"generate":1,"gib_per_gpu":104.000,"chunks":190840832,"tpb":128,"bpsm":8,"seconds":8.11,"attempts_per_s":8.8625e+06,"chunk_reads_per_s":4.1691e+08,"read_GBps":1707.7,"chunks_generated_per_s":4.3389e+08,"reads_per_step":5.880,"generated_per_step":6.120,"fill_s":1.99}
+results/24116e44d4a6-pack-20261005T173323Z/samples-stuff-7-s0.51-m11.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"stuff-7-s0.51-m15","mode":"peer","gpu":"NVIDIA H200","gpus":7,"partners":15,"regen":0.5100,"generate":1,"gib_per_gpu":104.000,"chunks":190840832,"tpb":128,"bpsm":8,"seconds":8.07,"attempts_per_s":6.6806e+06,"chunk_reads_per_s":4.1902e+08,"read_GBps":1716.3,"chunks_generated_per_s":4.3609e+08,"reads_per_step":7.840,"generated_per_step":8.160,"fill_s":2.00}
+results/24116e44d4a6-pack-20261005T173323Z/samples-stuff-7-s0.51-m15.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"stuff-7-s0.675-m0","mode":"peer","gpu":"NVIDIA H200","gpus":7,"partners":0,"regen":0.6750,"generate":1,"gib_per_gpu":104.000,"chunks":190840832,"tpb":128,"bpsm":8,"seconds":8.08,"attempts_per_s":8.8951e+07,"chunk_reads_per_s":2.3130e+08,"read_GBps":947.4,"chunks_generated_per_s":4.8031e+08,"reads_per_step":0.325,"generated_per_step":0.675,"fill_s":2.00}
+results/24116e44d4a6-pack-20261005T173323Z/samples-stuff-7-s0.675-m0.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"stuff-7-s0.675-m7","mode":"peer","gpu":"NVIDIA H200","gpus":7,"partners":7,"regen":0.6750,"generate":1,"gib_per_gpu":104.000,"chunks":190840832,"tpb":128,"bpsm":8,"seconds":8.18,"attempts_per_s":1.4577e+07,"chunk_reads_per_s":3.0323e+08,"read_GBps":1242.0,"chunks_generated_per_s":6.2970e+08,"reads_per_step":2.600,"generated_per_step":5.400,"fill_s":1.99}
+results/24116e44d4a6-pack-20261005T173323Z/samples-stuff-7-s0.675-m7.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"stuff-7-s0.675-m11","mode":"peer","gpu":"NVIDIA H200","gpus":7,"partners":11,"regen":0.6750,"generate":1,"gib_per_gpu":104.000,"chunks":190840832,"tpb":128,"bpsm":8,"seconds":8.06,"attempts_per_s":9.8647e+06,"chunk_reads_per_s":3.0780e+08,"read_GBps":1260.7,"chunks_generated_per_s":6.3922e+08,"reads_per_step":3.900,"generated_per_step":8.100,"fill_s":1.99}
+results/24116e44d4a6-pack-20261005T173323Z/samples-stuff-7-s0.675-m11.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"stuff-7-s0.675-m15","mode":"peer","gpu":"NVIDIA H200","gpus":7,"partners":15,"regen":0.6750,"generate":1,"gib_per_gpu":104.000,"chunks":190840832,"tpb":128,"bpsm":8,"seconds":8.01,"attempts_per_s":7.4406e+06,"chunk_reads_per_s":3.0956e+08,"read_GBps":1268.0,"chunks_generated_per_s":6.4284e+08,"reads_per_step":5.201,"generated_per_step":10.799,"fill_s":2.00}
+results/24116e44d4a6-pack-20261005T173323Z/samples-stuff-7-s0.675-m15.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+== fewer GPUs: the stuffer holds the (1 - s) of the chain it cannot regenerate
+samples: timed kernel equals reference on 128 of 128
+{"name":"honest-6","mode":"peer","gpu":"NVIDIA H200","gpus":6,"partners":0,"regen":0.0000,"generate":0,"gib_per_gpu":104.000,"chunks":163577856,"tpb":128,"bpsm":8,"seconds":8.01,"attempts_per_s":6.3655e+07,"chunk_reads_per_s":5.0924e+08,"read_GBps":2085.8,"chunks_generated_per_s":0.0000e+00,"reads_per_step":1.000,"generated_per_step":0.000,"fill_s":1.70}
+results/24116e44d4a6-pack-20261005T173323Z/samples-honest-6.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"stuff-6-s0.35-m0","mode":"peer","gpu":"NVIDIA H200","gpus":6,"partners":0,"regen":0.3500,"generate":1,"gib_per_gpu":104.000,"chunks":163577856,"tpb":128,"bpsm":8,"seconds":8.21,"attempts_per_s":6.7598e+07,"chunk_reads_per_s":3.5155e+08,"read_GBps":1440.0,"chunks_generated_per_s":1.8924e+08,"reads_per_step":0.650,"generated_per_step":0.350,"fill_s":1.70}
+results/24116e44d4a6-pack-20261005T173323Z/samples-stuff-6-s0.35-m0.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"stuff-6-s0.35-m7","mode":"peer","gpu":"NVIDIA H200","gpus":6,"partners":7,"regen":0.3500,"generate":1,"gib_per_gpu":104.000,"chunks":163577856,"tpb":128,"bpsm":8,"seconds":8.07,"attempts_per_s":1.0558e+07,"chunk_reads_per_s":4.3927e+08,"read_GBps":1799.2,"chunks_generated_per_s":2.3647e+08,"reads_per_step":5.200,"generated_per_step":2.800,"fill_s":1.70}
+results/24116e44d4a6-pack-20261005T173323Z/samples-stuff-6-s0.35-m7.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"stuff-6-s0.35-m15","mode":"peer","gpu":"NVIDIA H200","gpus":6,"partners":15,"regen":0.3500,"generate":1,"gib_per_gpu":104.000,"chunks":163577856,"tpb":128,"bpsm":8,"seconds":8.05,"attempts_per_s":5.3416e+06,"chunk_reads_per_s":4.4447e+08,"read_GBps":1820.5,"chunks_generated_per_s":2.3926e+08,"reads_per_step":10.401,"generated_per_step":5.599,"fill_s":1.71}
+results/24116e44d4a6-pack-20261005T173323Z/samples-stuff-6-s0.35-m15.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"honest-4","mode":"peer","gpu":"NVIDIA H200","gpus":4,"partners":0,"regen":0.0000,"generate":0,"gib_per_gpu":104.000,"chunks":109051904,"tpb":128,"bpsm":8,"seconds":8.12,"attempts_per_s":4.4362e+07,"chunk_reads_per_s":3.5490e+08,"read_GBps":1453.7,"chunks_generated_per_s":0.0000e+00,"reads_per_step":1.000,"generated_per_step":0.000,"fill_s":1.12}
+results/24116e44d4a6-pack-20261005T173323Z/samples-honest-4.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"stuff-4-s0.51-m0","mode":"peer","gpu":"NVIDIA H200","gpus":4,"partners":0,"regen":0.5100,"generate":1,"gib_per_gpu":104.000,"chunks":109051904,"tpb":128,"bpsm":8,"seconds":8.13,"attempts_per_s":4.8036e+07,"chunk_reads_per_s":1.8832e+08,"read_GBps":771.4,"chunks_generated_per_s":1.9597e+08,"reads_per_step":0.490,"generated_per_step":0.510,"fill_s":1.12}
+results/24116e44d4a6-pack-20261005T173323Z/samples-stuff-4-s0.51-m0.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"stuff-4-s0.51-m7","mode":"peer","gpu":"NVIDIA H200","gpus":4,"partners":7,"regen":0.5100,"generate":1,"gib_per_gpu":104.000,"chunks":109051904,"tpb":128,"bpsm":8,"seconds":8.18,"attempts_per_s":7.7291e+06,"chunk_reads_per_s":2.4239e+08,"read_GBps":992.8,"chunks_generated_per_s":2.5227e+08,"reads_per_step":3.920,"generated_per_step":4.080,"fill_s":1.12}
+results/24116e44d4a6-pack-20261005T173323Z/samples-stuff-4-s0.51-m7.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"stuff-4-s0.51-m15","mode":"peer","gpu":"NVIDIA H200","gpus":4,"partners":15,"regen":0.5100,"generate":1,"gib_per_gpu":104.000,"chunks":109051904,"tpb":128,"bpsm":8,"seconds":8.12,"attempts_per_s":3.9266e+06,"chunk_reads_per_s":2.4629e+08,"read_GBps":1008.8,"chunks_generated_per_s":2.5631e+08,"reads_per_step":7.840,"generated_per_step":8.160,"fill_s":1.13}
+results/24116e44d4a6-pack-20261005T173323Z/samples-stuff-4-s0.51-m15.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"honest-3","mode":"peer","gpu":"NVIDIA H200","gpus":3,"partners":0,"regen":0.0000,"generate":0,"gib_per_gpu":104.000,"chunks":81788928,"tpb":128,"bpsm":8,"seconds":8.09,"attempts_per_s":3.4292e+07,"chunk_reads_per_s":2.7434e+08,"read_GBps":1123.7,"chunks_generated_per_s":0.0000e+00,"reads_per_step":1.000,"generated_per_step":0.000,"fill_s":0.84}
+results/24116e44d4a6-pack-20261005T173323Z/samples-honest-3.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"stuff-3-s0.675-m0","mode":"peer","gpu":"NVIDIA H200","gpus":3,"partners":0,"regen":0.6750,"generate":1,"gib_per_gpu":104.000,"chunks":81788928,"tpb":128,"bpsm":8,"seconds":8.13,"attempts_per_s":3.9791e+07,"chunk_reads_per_s":1.0345e+08,"read_GBps":423.7,"chunks_generated_per_s":2.1488e+08,"reads_per_step":0.325,"generated_per_step":0.675,"fill_s":0.85}
+results/24116e44d4a6-pack-20261005T173323Z/samples-stuff-3-s0.675-m0.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"stuff-3-s0.675-m7","mode":"peer","gpu":"NVIDIA H200","gpus":3,"partners":7,"regen":0.6750,"generate":1,"gib_per_gpu":104.000,"chunks":81788928,"tpb":128,"bpsm":8,"seconds":8.07,"attempts_per_s":6.6327e+06,"chunk_reads_per_s":1.3795e+08,"read_GBps":565.0,"chunks_generated_per_s":2.8655e+08,"reads_per_step":2.600,"generated_per_step":5.400,"fill_s":8.94}
+results/24116e44d4a6-pack-20261005T173323Z/samples-stuff-3-s0.675-m7.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+samples: timed kernel equals reference on 128 of 128
+{"name":"stuff-3-s0.675-m15","mode":"peer","gpu":"NVIDIA H200","gpus":3,"partners":15,"regen":0.6750,"generate":1,"gib_per_gpu":104.000,"chunks":81788928,"tpb":128,"bpsm":8,"seconds":8.10,"attempts_per_s":3.4052e+06,"chunk_reads_per_s":1.4165e+08,"read_GBps":580.2,"chunks_generated_per_s":2.9422e+08,"reads_per_step":5.200,"generated_per_step":10.800,"fill_s":3.61}
+results/24116e44d4a6-pack-20261005T173323Z/samples-stuff-3-s0.675-m15.txt: Python reference agrees on 2 of 2; timed kernel equals reference on 128 of 128
+== done: results/24116e44d4a6-pack-20261005T173323Z
+runs verified: 27

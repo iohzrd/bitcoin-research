@@ -1,0 +1,1 @@
+{"kernel":"staged","mode":"peer","gpu":"NVIDIA H200","gpus":7,"chunk":4096,"step":"blake2b","gib_per_gpu":104.000,"chunks":190840832,"tpb":128,"bpsm":8,"seconds":8.13,"attempts_per_s":9.0468e+07,"reads_per_s":7.2374e+08,"read_GBps":2964.5,"remote_read_fraction":0.750,"fill_s":1.13}

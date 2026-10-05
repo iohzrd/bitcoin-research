@@ -1,0 +1,15 @@
+{"m":0,"s":0.0000,"mode":"h","threads":208,"gib":128.0,"seconds":10.01,"attempts_per_s":2.2191e+06,"reads_per_step":1.000,"generated_per_step":0.000,"read_GBps":72.7,"check_agree":16,"fill_s":138.7}
+{"m":0,"s":0.0000,"mode":"f","threads":208,"gib":128.0,"seconds":10.01,"attempts_per_s":4.7926e+06,"reads_per_step":1.000,"generated_per_step":0.000,"read_GBps":157.0,"check_agree":16,"fill_s":138.7}
+{"m":0,"s":0.3500,"mode":"g","threads":208,"gib":128.0,"seconds":10.01,"attempts_per_s":2.4462e+06,"reads_per_step":0.650,"generated_per_step":0.350,"read_GBps":52.1,"check_agree":16,"fill_s":138.7}
+{"m":3,"s":0.3500,"mode":"g","threads":208,"gib":128.0,"seconds":10.01,"attempts_per_s":1.6544e+06,"reads_per_step":2.600,"generated_per_step":1.400,"read_GBps":140.9,"check_agree":16,"fill_s":138.7}
+{"m":7,"s":0.3500,"mode":"g","threads":208,"gib":128.0,"seconds":10.01,"attempts_per_s":9.3074e+05,"reads_per_step":5.200,"generated_per_step":2.800,"read_GBps":158.6,"check_agree":16,"fill_s":138.7}
+{"m":15,"s":0.3500,"mode":"g","threads":208,"gib":128.0,"seconds":10.02,"attempts_per_s":4.7672e+05,"reads_per_step":10.400,"generated_per_step":5.600,"read_GBps":162.5,"check_agree":16,"fill_s":138.7}
+{"m":0,"s":0.5100,"mode":"g","threads":208,"gib":128.0,"seconds":10.01,"attempts_per_s":2.4465e+06,"reads_per_step":0.490,"generated_per_step":0.510,"read_GBps":39.3,"check_agree":16,"fill_s":138.7}
+{"m":3,"s":0.5100,"mode":"g","threads":208,"gib":128.0,"seconds":10.01,"attempts_per_s":1.7562e+06,"reads_per_step":1.959,"generated_per_step":2.041,"read_GBps":112.8,"check_agree":16,"fill_s":138.7}
+{"m":7,"s":0.5100,"mode":"g","threads":208,"gib":128.0,"seconds":10.01,"attempts_per_s":1.2393e+06,"reads_per_step":3.919,"generated_per_step":4.081,"read_GBps":159.1,"check_agree":16,"fill_s":138.7}
+{"m":15,"s":0.5100,"mode":"g","threads":208,"gib":128.0,"seconds":10.01,"attempts_per_s":6.7275e+05,"reads_per_step":7.838,"generated_per_step":8.162,"read_GBps":172.8,"check_agree":16,"fill_s":138.7}
+{"m":0,"s":0.6750,"mode":"g","threads":208,"gib":128.0,"seconds":10.01,"attempts_per_s":2.4861e+06,"reads_per_step":0.325,"generated_per_step":0.675,"read_GBps":26.5,"check_agree":16,"fill_s":138.7}
+{"m":3,"s":0.6750,"mode":"g","threads":208,"gib":128.0,"seconds":10.01,"attempts_per_s":1.8103e+06,"reads_per_step":1.300,"generated_per_step":2.700,"read_GBps":77.1,"check_agree":16,"fill_s":138.7}
+{"m":7,"s":0.6750,"mode":"g","threads":208,"gib":128.0,"seconds":10.01,"attempts_per_s":1.3805e+06,"reads_per_step":2.599,"generated_per_step":5.401,"read_GBps":117.6,"check_agree":16,"fill_s":138.7}
+{"m":11,"s":0.6750,"mode":"g","threads":208,"gib":128.0,"seconds":10.01,"attempts_per_s":1.1172e+06,"reads_per_step":3.899,"generated_per_step":8.101,"read_GBps":142.7,"check_agree":16,"fill_s":138.7}
+{"m":15,"s":0.6750,"mode":"g","threads":208,"gib":128.0,"seconds":10.01,"attempts_per_s":9.2887e+05,"reads_per_step":5.199,"generated_per_step":10.801,"read_GBps":158.2,"check_agree":16,"fill_s":138.7}
