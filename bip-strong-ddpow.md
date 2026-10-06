@@ -318,7 +318,7 @@ prefix, at 64 raw reads per header for a node without a packed copy.
 ### Option: group encoding
 
 Group encoding, not specified, would replace packing so that a miner keeps one copy of the
-chain. Branch `ddpow-groups` of the reference implementation implements it.
+chain. A regtest prototype, not kept, produced the group results in Results.
 
 - Windows: window `j` is blocks `jW` to `(j+1)W - 1`. Its `C_j` chunks, with window indices
   `c = 0..C_j - 1`, are ordered by `u64le` of the first 8 bytes of
@@ -360,8 +360,8 @@ Properties:
 ### Option: two-layer packing
 
 Two-layer packing, not specified, would replace packing so that a miner keeps one copy, with
-partners spread over the older chain as in packing. Branch `ddpow-twolayer` of the reference
-implementation implements it.
+partners spread over the older chain as in packing. A regtest prototype, not kept, implemented it
+(Results).
 
 - Layers: chunk `u` of block `b` is in layer `L = BLAKE2b-256(0x06 || I_b || LE32(u))[0] mod 2`.
 - Encoding: a layer-0 chunk's encoding is `chunk(a)` XORed with the raw chunks of `m0` distinct
@@ -385,13 +385,12 @@ Properties:
 
 ### Results
 
-Results (informative; no requirement of this specification depends on them). Regtest,
-2026-10-05, branch `ddpow-groups`: chains built by `test/functional/ddpow_groups_experiment.py`
-(`--save`) and evaluated by `test/functional/ddpow_encoding_table.py`; `k = 8`, `W = 144`. Each
-chain has 101 blocks without payload, 300 blocks with random payloads, then 200 (run A) or 700
-blocks, each mined by a stuffer with probability `h`. A stuffer payload is 880,000 bytes of
-BLAKE2b-512 output in counter mode from a seed, checked byte for byte against the chain; other
-payloads are random bytes:
+Results (informative; no requirement of this specification depends on them). 2026-10-05, regtest
+prototypes of group encoding and two-layer packing, not kept; `k = 8`, `W = 144`. Each chain has
+101 blocks without payload, 300 blocks with random payloads, then 200 (run A) or 700 blocks, each
+mined by a stuffer with probability `h`. A stuffer payload is 880,000 bytes of BLAKE2b-512 output
+in counter mode from a seed, checked byte for byte against the chain; other payloads are random
+bytes:
 
 - A: `h = 0.3`, other payloads 880,000 bytes; 0.1188 of the chunks regenerable.
 - B: `h = 0.5`, other payloads 880,000 bytes; 0.3466 regenerable.
@@ -408,9 +407,8 @@ held and regenerable data. The stuffer's holdings: for groups, the raw chunks of
 non-regenerable members, greedily by saving per slot; for packing and two-layer packing, raw
 chunks oldest first or most used by its regenerable chunks first (best of five amounts), and for
 two-layer packing also the layer-0 encodings used by the most regenerable layer-1 chunks; encoded
-or packed chunks in the remaining slots. The analysis's two-layer partners and encodings equal
-those of branch `ddpow-twolayer`'s node at sampled positions
-(`test/functional/ddpow_twolayer_experiment.py` there).
+or packed chunks in the remaining slots. The two-layer prototype's node computed the same partners
+and encodings as the analysis at sampled positions.
 
 | Run | Encoding            | Single tier | `c = 0` | `c = 0.07` | `c = 0.15` |
 | --- | ------------------- | ----------- | ------- | ---------- | ---------- |
@@ -641,7 +639,8 @@ The reference implementation's unit test `bip_test_vectors` checks these values.
 
 ## Reference implementation
 
-A regtest implementation in a fork of Bitcoin Knots (branch `ddpow-pack`;
+A regtest implementation in a fork of Bitcoin Knots
+([`iohzrd/bitcoin`, branch `ddpow-pack`](https://github.com/iohzrd/bitcoin/tree/ddpow-pack);
 `-testactivationheight=ddpow@<height>`, `-ddpowreads=<k>`, `-ddpowpartners=<m>`) implements the
 chunk space, packing, the walk, the node's miner, and validation from the node's block files. It
 differs from this specification in:
@@ -654,17 +653,6 @@ work when the block connects. With `-ddpowpackedstore` its miner keeps a packed 
 it follows (packing the blocks it lacks before it mines, and truncating to the common ancestor
 after a reorganization) and walks it with one read per step. Its unit tests check partners, packed
 chunks and walks against vectors from an independent Python implementation, against which its
-functional tests also check every block.
-
-Branch `ddpow-groups` (`-ddpowgroup=<g>`, `-ddpowwindow=<W>`) is the same implementation with
-group encoding (Packing: Option: group encoding) in place of packing. Its unit tests check
-windows, groups, encoded chunks, decoding and walks against vectors from an independent Python
-implementation, against which its functional tests also check every block.
-
-Branch `ddpow-twolayer` (`-ddpowpartners0=<m0>`, `-ddpowpartners1=<m1>`, default 15 each) is the
-same implementation with two-layer packing (Packing: Option: two-layer packing) in place of
-packing. Its unit tests check layers, partners, encodings, walks and the recovery of raw chunks
-from encodings against vectors from an independent Python implementation, against which its
 functional tests also check every block.
 
 ## Prior art
