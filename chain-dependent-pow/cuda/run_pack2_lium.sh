@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Third packing run on a rented multi-GPU machine: the stuffer with partner counts 0 to 7 on the
-# GPUs it would rent, with both the staged and the fused kernel (ddpow_pack_cuda.cu), then the CPU
-# packing benchmark on the host with 8-lane AVX-512 BLAKE2b (ddpow_pack_cpu.cpp, --hash x8). Writes JSON lines, samples and
-# checks to results/<host>-pack3-<time>/. Run from ddpow-strong/cuda.
+# Second packing run on a rented multi-GPU machine: a stuffer with partner counts 0 to 7 on the
+# GPUs it would rent to hold the (1 - s) of the chain it cannot regenerate (ddpow_pack_cuda.cu),
+# then the CPU packing benchmark on the host (ddpow_pack_cpu.cpp). Writes JSON lines, samples and
+# checks to results/<host>-pack2-<time>/. Run from chain-dependent-pow/cuda.
 #
 # Options (environment): SECONDS_PER_RUN (default 8), GIB_PER_GPU (default 104), BPSM (default
 # 8), CPU_GIB (host dataset, default 128), CPU_SECONDS (default 10), CUDA_ARCH (default 90).
@@ -14,7 +14,7 @@ BPSM=${BPSM:-8}
 CPU_GIB=${CPU_GIB:-128}
 CPU_RUN=${CPU_SECONDS:-10}
 ARCH=${CUDA_ARCH:-90}
-OUT=results/$(hostname)-pack3-$(date -u +%Y%m%dT%H%M%SZ)
+OUT=results/$(hostname)-pack2-$(date -u +%Y%m%dT%H%M%SZ)
 mkdir -p "$OUT"
 exec > >(tee -a "$OUT/run.log") 2>&1
 
@@ -49,13 +49,11 @@ gpu all --mode peer --gpus "$G" --gib-per-gpu "$GIB" --list 0:0
 for s in 0.35 0.51 0.675; do
     g=$(python3 -c "import math; print(max(1, math.ceil((1 - $s) * $G)))")
     echo "== s = $s on $g GPUs: honest, then the stuffer with 0 to 7 partners"
-    gpu s$s-g$g-staged --mode peer --gpus "$g" --gib-per-gpu "$GIB" --regen "$s" --kernel staged --list "0:0,0:1,1:1,2:1,3:1,4:1,5:1,6:1,7:1"
-    gpu s$s-g$g-fused --mode peer --gpus "$g" --gib-per-gpu "$GIB" --regen "$s" --kernel fused --list "0:1,1:1,2:1,3:1,4:1,5:1,6:1,7:1"
+    gpu s$s-g$g --mode peer --gpus "$g" --gib-per-gpu "$GIB" --regen "$s" --list "0:0,0:1,1:1,2:1,3:1,4:1,5:1,6:1,7:1"
 done
 
-echo "== CPU on the host (${CPU_GIB} GiB, all threads): scalar honest for reference, then 8-lane AVX-512"
-./ddpow_pack_cpu --gib "$CPU_GIB" --seconds "$CPU_RUN" --configs "0:0:h" | tee "$OUT/cpu-scalar.jsonl"
-./ddpow_pack_cpu --gib "$CPU_GIB" --seconds "$CPU_RUN" --hash x8 --check "$OUT/cpu-check.txt" \
+echo "== CPU on the host (${CPU_GIB} GiB, all threads)"
+./ddpow_pack_cpu --gib "$CPU_GIB" --seconds "$CPU_RUN" --check "$OUT/cpu-check.txt" \
     --configs "0:0:h,0:0:f,0:0.35:g,3:0.35:g,7:0.35:g,15:0.35:g,0:0.51:g,3:0.51:g,7:0.51:g,15:0.51:g,0:0.675:g,3:0.675:g,7:0.675:g,11:0.675:g,15:0.675:g" \
     | tee "$OUT/cpu.jsonl"
 

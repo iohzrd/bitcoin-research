@@ -43,6 +43,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e7648175b45a9a48536d676f68d918270699102aa8dab5496df06904c914600"
 
 [[package]]
+name = "chain-dependent-pow"
+version = "0.1.0"
+dependencies = [
+ "blake2",
+ "blake2b_simd",
+ "serde_json",
+ "sha2",
+]
+
+[[package]]
 name = "constant_time_eq"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -65,16 +75,6 @@ checksum = "78c8292055d1c1df0cce5d180393dc8cce0abec0a7102adb6c7b1eef6016d60a"
 dependencies = [
  "generic-array",
  "typenum",
-]
-
-[[package]]
-name = "ddpow-strong"
-version = "0.1.0"
-dependencies = [
- "blake2",
- "blake2b_simd",
- "serde_json",
- "sha2",
 ]
 
 [[package]]

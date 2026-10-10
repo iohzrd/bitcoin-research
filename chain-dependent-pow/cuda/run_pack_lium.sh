@@ -2,7 +2,7 @@
 # Packing benchmark on a rented multi-GPU machine (ddpow_pack_cuda.cu): an honest miner reading a
 # stored packed chunk per step against a stuffer forming packed chunks from raw chunks and the
 # chunks it generates. Writes JSON lines, samples and checks to results/<host>-pack-<time>/.
-# Run from ddpow-strong/cuda.
+# Run from chain-dependent-pow/cuda.
 #
 # Options (environment): SECONDS_PER_RUN (default 12), GIB_PER_GPU (default 104), BPSM (blocks
 # per SM, default 8), CUDA_ARCHS (default "80 86 89 90 100 120").

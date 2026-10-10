@@ -1,5 +1,5 @@
     BIP: XXXX
-    Title: Strong data-dependent proof of work
+    Title: Chain-dependent proof of work
     Author: iohzrd
     Status: Draft
     Type: Standards Track
@@ -113,7 +113,7 @@ BLAKE2b compression function evaluations per step (Costs).
 
 Measurement (informative; no requirement of this specification depends on it). One laptop (AMD
 Ryzen AI 9 HX 370, 24 threads, 30 GiB LPDDR5X, one Micron MTFDKBA1T0QFM NVMe drive), 2026-09-30,
-`k = 8`, chained reads, with the `ddpow-strong` prototype (`bench --read-bytes`; method in its
+`k = 8`, chained reads, with the `chain-dependent-pow` prototype (`bench --read-bytes`; method in its
 README). RAM: an 8 GiB dataset, 8 interleaved attempts per thread. NVMe: a 16 GiB file read with
 O_DIRECT, 192 threads; read 0 from the parent in RAM. In the RAM runs each read is folded into
 the digest with XOR and a 64-bit mix instead of hashed, so memory, not this processor's hashing,
@@ -614,15 +614,15 @@ block whose parent is string 13: `N = 54`, `S = 44`, and `first_b` is
 
 Packing with `m = 7` (SHA-256 of the 4,096-byte packed chunk):
 
-| `a` | `b` | `u` | partners | SHA-256 of `packed(a)` |
-| --- | --- | --- | -------- | ---------------------- |
-| 0  | 0  | 0 | none | `d7e9cb80c435795a67bdccd18f921b2102ff82cbb977ebd23a2b5d80a78d6f7a` |
-| 3  | 3  | 0 | 0, 1, 2 | `e4496d67cf522df1f4f5fb370e223939c8633bb2d94f04a6c8a3388fd0d452af` |
-| 5  | 4  | 0 | 0, 1, 2, 3, 4 | `3c122ed6153d05f1686455b617c65a7e2ce2d4c6f637d8960738feeca381bfb1` |
-| 12 | 7  | 0 | 1, 9, 2, 10, 3, 0, 11 | `80f59a0fbfe4384ad64cd50b10639dfd16722b6a04a4774f19a99442bda83817` |
-| 30 | 11 | 1 | 11, 14, 9, 4, 26, 2, 15 | `42371042fe223513e4c47c6f00850fefc562f58eee272d506807e6924f4af510` |
-| 44 | 13 | 0 | 2, 18, 24, 33, 38, 30, 10 | `15b6ef2d39864b1555daad1ba984994bf30eb0726e7805534ef378ea0f4802c9` |
-| 53 | 13 | 9 | 13, 36, 38, 4, 35, 6, 5 | `3c67e7c346380a38b3ed5667246ca1589d07303521a6d1c6ac9c926ef70082f4` |
+| `a` | `b` | `u` | partners                  | SHA-256 of `packed(a)`                                             |
+| --- | --- | --- | ------------------------- | ------------------------------------------------------------------ |
+| 0   | 0   | 0   | none                      | `d7e9cb80c435795a67bdccd18f921b2102ff82cbb977ebd23a2b5d80a78d6f7a` |
+| 3   | 3   | 0   | 0, 1, 2                   | `e4496d67cf522df1f4f5fb370e223939c8633bb2d94f04a6c8a3388fd0d452af` |
+| 5   | 4   | 0   | 0, 1, 2, 3, 4             | `3c122ed6153d05f1686455b617c65a7e2ce2d4c6f637d8960738feeca381bfb1` |
+| 12  | 7   | 0   | 1, 9, 2, 10, 3, 0, 11     | `80f59a0fbfe4384ad64cd50b10639dfd16722b6a04a4774f19a99442bda83817` |
+| 30  | 11  | 1   | 11, 14, 9, 4, 26, 2, 15   | `42371042fe223513e4c47c6f00850fefc562f58eee272d506807e6924f4af510` |
+| 44  | 13  | 0   | 2, 18, 24, 33, 38, 30, 10 | `15b6ef2d39864b1555daad1ba984994bf30eb0726e7805534ef378ea0f4802c9` |
+| 53  | 13  | 9   | 13, 36, 38, 4, 35, 6, 5   | `3c67e7c346380a38b3ed5667246ca1589d07303521a6d1c6ac9c926ef70082f4` |
 
 Walks with `k = 8`, `m = 7` (`h0` and `final` as 32 bytes in digest order):
 

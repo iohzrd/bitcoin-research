@@ -2,7 +2,7 @@
 # Runs the strong data-dependent proof of work benchmarks on an NVIDIA machine (a rented pod):
 # GPU step ceilings, the dataset in one GPU's memory, the dataset split across all GPUs with
 # peer reads (NVLink), and the CPU benchmark on the host. Writes JSON lines and logs to
-# results/<host>-<time>/. Run from ddpow-strong/cuda.
+# results/<host>-<time>/. Run from chain-dependent-pow/cuda.
 #
 # Options (environment): SECONDS_PER_RUN (default 15), PEER_FILL (fraction of each GPU's memory
 # for the peer dataset, default 0.75), CPU_GIB (host dataset, default min(256, 60% of RAM)),
@@ -92,7 +92,7 @@ if [ "$GPUS" -gt 1 ]; then
 fi
 
 echo "== CPU on the host (${CPU_GIB} GiB, all threads, 8 lanes, 4 KiB reads)"
-(cd .. && ./target/release/ddpow-strong bench --read-bytes 4096 --lanes 8 --gib "$CPU_GIB" --seconds "$RUN") | tee -a "$OUT/cpu-bench.txt"
-(cd .. && ./target/release/ddpow-strong bench --read-bytes 4096 --lanes 8 --gib "$CPU_GIB" --seconds "$RUN" --nohash 1) | tee -a "$OUT/cpu-bench.txt"
+(cd .. && ./target/release/chain-dependent-pow bench --read-bytes 4096 --lanes 8 --gib "$CPU_GIB" --seconds "$RUN") | tee -a "$OUT/cpu-bench.txt"
+(cd .. && ./target/release/chain-dependent-pow bench --read-bytes 4096 --lanes 8 --gib "$CPU_GIB" --seconds "$RUN" --nohash 1) | tee -a "$OUT/cpu-bench.txt"
 
 echo "== done: $OUT"

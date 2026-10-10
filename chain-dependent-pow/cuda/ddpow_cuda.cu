@@ -1,6 +1,6 @@
 // Strong data-dependent proof of work benchmark for NVIDIA GPUs (CUDA).
 //
-// One attempt (bip-strong-ddpow.md, Per attempt, with k = 8): x_0 = BLAKE2b-256 of an 80-byte
+// One attempt (bip-chain-dependent-pow.md, Per attempt, with k = 8): x_0 = BLAKE2b-256 of an 80-byte
 // header (zero except bytes 0..8 = stream id, 8..16 = nonce, both little-endian); read 0 at
 // S + idx(x_0, N - S) in the parent region, reads 1..7 at idx(x_i, N); x_{i+1} = step(x_i, chunk);
 // final = x_8. idx(x, n) = u64le(x[0..8]) mod n.

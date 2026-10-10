@@ -6,9 +6,9 @@ Compares hashrate per dollar and its concentration across three cases: SHA256 mi
 is today, and the strong data-dependent rule (a chain read on every hash) run on a disk-bound
 home node versus a memory-resident server. All prices are approximate and market-dependent.
 Strong-rule rates are for the specification's 4,096-byte chunks, each hashed whole (265
-BLAKE2b compressions per attempt at k = 8), measured with `ddpow-strong` on a desktop (Ryzen 9
+BLAKE2b compressions per attempt at k = 8), measured with `chain-dependent-pow` on a desktop (Ryzen 9
 5950X, 32 threads, Samsung 980 PRO) and an AMD Radeon RX 9070 XT, and on a rented 8 x NVIDIA
-H200 node with a DDR5 host (2 x Xeon Platinum 8468), 2026-10-01 (`ddpow-strong/README.md`). The
+H200 node with a DDR5 host (2 x Xeon Platinum 8468), 2026-10-01 (`chain-dependent-pow/README.md`). The
 DDR4 server rate is extrapolated from the desktop by core count and clock. The CPU RAM
 measurements use 12 to 128 GiB datasets; the H200 node held 832 GiB, about the chain's size.
 
@@ -163,4 +163,4 @@ fork (every 200th block); 96,273 bytes per block since the fork (every 20th bloc
   https://www.ebay.com/b/PC4-25600-DDR4-3200-Bus-Speed-DDR4-SDRAM-Memory-RAM/170083/bn_7113648873
 - DDR5 server parts: https://www.ebay.com/itm/186576183619 ; https://datacenterdisk.com/server-ram/ddr5
 - NVMe prices: https://cheapestssd.com/1tb-nvme-ssd/
-- Strong-rule rates: `ddpow-strong/` in this repository (desktop measurements, 2026-09-30).
+- Strong-rule rates: `chain-dependent-pow/` in this repository (desktop measurements, 2026-09-30).

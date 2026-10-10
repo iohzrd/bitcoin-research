@@ -1,6 +1,6 @@
-# ddpow-strong/cuda: GPU benchmark for NVIDIA
+# chain-dependent-pow/cuda: GPU benchmark for NVIDIA
 
-CUDA benchmark of the strong rule's attempt (bip-strong-ddpow.md, k = 8) on NVIDIA GPUs, and
+CUDA benchmark of the strong rule's attempt (bip-chain-dependent-pow.md, k = 8) on NVIDIA GPUs, and
 `run_lium.sh`, which runs every test on a rented machine (lium.io or any NVIDIA host with
 `nvcc`). Data is generated on each GPU: word j of chunk a is splitmix64(a * W + j), W = chunk
 bytes / 8. `verify.py` recomputes 128 sampled attempts per run with `hashlib.blake2b` and
@@ -27,11 +27,11 @@ On a pod (from this repository's root on the local machine; `<pod>` is the index
 `lium ps` shows):
 
 ```
-tar czf ddpow-bench.tgz --exclude=target --exclude=testfile.bin --exclude=results ddpow-strong
+tar czf ddpow-bench.tgz --exclude=target --exclude=testfile.bin --exclude=results chain-dependent-pow
 lium up --gpu H200 -c 8 --name h200          # or: lium up --gpu RTX4090 for a first test
 lium scp h200 ./ddpow-bench.tgz /root/
-lium exec h200 "cd /root && tar xzf ddpow-bench.tgz && cd ddpow-strong/cuda && ./run_lium.sh"
-lium scp h200 /root/ddpow-strong/cuda/results ./ -d
+lium exec h200 "cd /root && tar xzf ddpow-bench.tgz && cd chain-dependent-pow/cuda && ./run_lium.sh"
+lium scp h200 /root/chain-dependent-pow/cuda/results ./ -d
 lium rm h200
 ```
 

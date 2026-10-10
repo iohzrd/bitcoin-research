@@ -2,7 +2,7 @@
 # Chunk-size sweep on an NVIDIA machine: for 64, 256, 1024, 4096 and 8192-byte chunks, the
 # blake2b step ceiling, one GPU's memory (blake2b and fold), and with 2 or more GPUs the
 # dataset split across all GPUs (blake2b and fold). fold costs one compression per read, so it
-# gives the read limit. Writes results/<host>-chunks-<time>/. Run from ddpow-strong/cuda.
+# gives the read limit. Writes results/<host>-chunks-<time>/. Run from chain-dependent-pow/cuda.
 # Options (environment): SECONDS_PER_RUN (default 12), PEER_FILL (default 0.75), CUDA_ARCHS.
 set -euo pipefail
 cd "$(dirname "$0")"

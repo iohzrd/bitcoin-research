@@ -1,6 +1,6 @@
 // Packing benchmark for NVIDIA GPUs (CUDA): an honest miner reading a stored packed chunk per
 // step against a stuffer forming each packed chunk from raw chunks, generating the ones it can
-// regenerate (bip-strong-ddpow.md, Packing; k = 8, 4,096-byte chunks).
+// regenerate (bip-chain-dependent-pow.md, Packing; k = 8, 4,096-byte chunks).
 //
 // One attempt: x_0 = BLAKE2b-256 of an 80-byte header (zero except bytes 0..8 = stream id, 8..16
 // = nonce, little-endian); read i at a_i = idx(x_i, N), i = 0..7 (no parent region);

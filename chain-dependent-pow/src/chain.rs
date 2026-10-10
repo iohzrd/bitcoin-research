@@ -1,4 +1,4 @@
-//! Block proof section and header verification from an anchor (bip-strong-ddpow.md,
+//! Block proof section and header verification from an anchor (bip-chain-dependent-pow.md,
 //! Specification). The section is carried in the block, outside the block hash. An archival miner
 //! builds it; a pruned validator and a header-only light client check it against Merkle
 //! mountain range peaks they computed themselves, holding no chain data.
@@ -6,7 +6,7 @@
 //! Headers are the chain's v2 headers (`header.rs`): `h0` is the stage-3 digest `hash2`, and
 //! `final`, XORed with the header's mask and read as a block hash, must meet `nBits`.
 //!
-//!   ddpow-strong chain [--blocks 3000] [--activation 1000] [--body-kib 64] [--nbits 1f400000]
+//!   chain-dependent-pow chain [--blocks 3000] [--activation 1000] [--body-kib 64] [--nbits 1f400000]
 
 use super::header::{self, V2Header};
 use super::{CHUNK, Mmr, arg, arg_str, attempt, blake2b, commit, fold, idx, leaf, mix, node, peak_for};

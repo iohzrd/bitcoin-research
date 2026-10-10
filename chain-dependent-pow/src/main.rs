@@ -16,15 +16,15 @@
 //!   solution if final has >= `bits` leading zero bits
 //!
 //! Usage:
-//!   ddpow-strong bench [--gib 4] [--reads 8] [--threads N] [--seconds 10] [--lanes 1]
-//!   ddpow-strong bench --disk <file> [--gib 16] [--reads 8] [--threads N] [--seconds 20]
+//!   chain-dependent-pow bench [--gib 4] [--reads 8] [--threads N] [--seconds 10] [--lanes 1]
+//!   chain-dependent-pow bench --disk <file> [--gib 16] [--reads 8] [--threads N] [--seconds 20]
 //!     both: [--read-bytes 64] (bytes per read, hashed whole; a power of two, at most 4096 on
 //!     disk) [--nohash 1] (fold each read instead of hashing it: the memory or disk limit)
-//!   ddpow-strong partial [--gib 1] [--reads 8] [--threads N] [--seconds 3] [--layout random|prefix]
+//!   chain-dependent-pow partial [--gib 1] [--reads 8] [--threads N] [--seconds 3] [--layout random|prefix]
 //!                                                  (partial holder: chained vs independent reads)
-//!   ddpow-strong prove [--kib 256] [--reads 8]     (build an MMR, find a low-target
+//!   chain-dependent-pow prove [--kib 256] [--reads 8]     (build an MMR, find a low-target
 //!                                                   solution, prove and verify its reads)
-//!   ddpow-strong chain [--blocks 3000] [--activation 1000] [--body-kib 64] [--nbits 1f400000]
+//!   chain-dependent-pow chain [--blocks 3000] [--activation 1000] [--body-kib 64] [--nbits 1f400000]
 //!                                                  (block proof sections: pruned validator and
 //!                                                   light client from the anchor, attacks)
 
@@ -768,10 +768,10 @@ fn main() {
         Some("prove") => prove(),
         Some("chain") => chain::run(),
         _ => {
-            eprintln!("usage: ddpow-strong bench [--gib G] [--reads k] [--disk FILE] [--threads N] [--seconds S] [--read-bytes B] [--lanes L] [--nohash 1]");
-            eprintln!("       ddpow-strong partial [--gib G] [--reads k] [--threads N] [--seconds S] [--layout random|prefix]");
-            eprintln!("       ddpow-strong prove [--kib K] [--reads k] [--bits B]");
-            eprintln!("       ddpow-strong chain [--blocks B] [--activation A] [--body-kib K] [--nbits HEX]");
+            eprintln!("usage: chain-dependent-pow bench [--gib G] [--reads k] [--disk FILE] [--threads N] [--seconds S] [--read-bytes B] [--lanes L] [--nohash 1]");
+            eprintln!("       chain-dependent-pow partial [--gib G] [--reads k] [--threads N] [--seconds S] [--layout random|prefix]");
+            eprintln!("       chain-dependent-pow prove [--kib K] [--reads k] [--bits B]");
+            eprintln!("       chain-dependent-pow chain [--blocks B] [--activation A] [--body-kib K] [--nbits HEX]");
         }
     }
 }

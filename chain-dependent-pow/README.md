@@ -1,4 +1,4 @@
-# ddpow-strong: read-per-hash proof of work, software prototype
+# chain-dependent-pow: read-per-hash proof of work, software prototype
 
 Tests whether the strong data-dependent rule (a chain read on every hash, not only on the
 rare reported candidate) is implementable and what bounds it, without an FPGA. It is.
@@ -342,10 +342,10 @@ and the oversize parent rejected from the anchor.
 ## Usage
 
 ```
-ddpow-strong bench [--gib G] [--reads k] [--threads N] [--seconds S] [--lanes L]  # RAM regime
-ddpow-strong bench --disk FILE [--gib G] [--reads k] [--threads N] ...   # disk regime
+chain-dependent-pow bench [--gib G] [--reads k] [--threads N] [--seconds S] [--lanes L]  # RAM regime
+chain-dependent-pow bench --disk FILE [--gib G] [--reads k] [--threads N] ...   # disk regime
     both: [--read-bytes B] (bytes per read, hashed whole) [--nohash 1] (fold instead of hash)
-ddpow-strong partial [--gib G] [--reads k] [--layout random|prefix]      # partial holder, both rules
-ddpow-strong prove [--kib K] [--reads k] [--bits B]                      # Merkle mountain range proof roundtrip
-ddpow-strong chain [--blocks B] [--activation A] [--body-kib K] [--nbits HEX] # proof sections, pruned and light followers
+chain-dependent-pow partial [--gib G] [--reads k] [--layout random|prefix]      # partial holder, both rules
+chain-dependent-pow prove [--kib K] [--reads k] [--bits B]                      # Merkle mountain range proof roundtrip
+chain-dependent-pow chain [--blocks B] [--activation A] [--body-kib K] [--nbits HEX] # proof sections, pruned and light followers
 ```
